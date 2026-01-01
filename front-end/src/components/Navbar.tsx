@@ -1,10 +1,8 @@
 import { Search, Bell } from 'lucide-react';
 import '../Styles/Navbar.css';
+import type { NavbarProps } from "../types/Navbar";
 
-interface NavbarProps {
-  title: string;
-  subtitle?: string;
-}
+
 
 export function Navbar({ title, subtitle }: NavbarProps) {
   return (

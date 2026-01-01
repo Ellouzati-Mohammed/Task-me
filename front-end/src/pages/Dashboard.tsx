@@ -11,131 +11,13 @@ import {
   Calendar,
   MapPin,
   Users,
-  MoreHorizontal,
-  type LucideIcon 
+  MoreHorizontal
 } from 'lucide-react';
 import '../Styles/Dashboard.css';
+import type { StatCardProps,ActivityItem,Task,StatusConfig,TypeLabels } from "../types/Dashboard.d";
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
-  icon: LucideIcon;
-  iconColor?: string;
-}
 
-function StatCard({ 
-  title, 
-  value, 
-  change, 
-  changeType = 'neutral', 
-  icon: Icon,
-  iconColor = '#14b8a6'
-}: StatCardProps) {
-  return (
-    <div className="stat-card card-hover animate-fade-in">
-      <div className="stat-card-container">
-        <div className="stat-card-info">
-          <p className="stat-card-title">{title}</p>
-          <p className="stat-card-value">{value}</p>
-          {change && (
-            <p className={`stat-card-change ${changeType}`}>
-              {change}
-            </p>
-          )}
-        </div>
-        <div 
-          className="stat-card-icon-wrapper" 
-          style={{ 
-            backgroundColor: `${iconColor}1A`,
-            color: iconColor 
-          }}
-        >
-          <Icon size={20} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Recent Activity Component
-interface ActivityItem {
-  id: string;
-  type: 'accepted' | 'refused' | 'delegated' | 'created' | 'assigned';
-  user: string;
-  task: string;
-  time: string;
-}
-
-const activityConfig = {
-  accepted: { icon: CheckCircle, color: 'success', label: 'a accepté' },
-  refused: { icon: XCircle, color: 'destructive', label: 'a refusé' },
-  delegated: { icon: ArrowRightLeft, color: 'delegated', label: 'a délégué' },
-  created: { icon: Clock, color: 'info', label: 'a créé' },
-  assigned: { icon: User, color: 'accent', label: 'a été assigné à' },
-};
-
-const mockActivities: ActivityItem[] = [
-  { id: '1', type: 'accepted', user: 'Ahmed Benali', task: 'Formation React Avancé', time: 'Il y a 5 min' },
-  { id: '2', type: 'delegated', user: 'Fatima Zahra', task: 'Audit Pédagogique Q1', time: 'Il y a 15 min' },
-  { id: '3', type: 'created', user: 'Mohammed Alami', task: 'Jury Certification Dev', time: 'Il y a 1h' },
-  { id: '4', type: 'refused', user: 'Sara Idrissi', task: 'Observation Stage', time: 'Il y a 2h' },
-  { id: '5', type: 'assigned', user: 'Youssef Bennani', task: 'Conception Évaluation', time: 'Il y a 3h' },
-];
-
-function RecentActivity() {
-  return (
-    <div className="recent-activity">
-      <h3 className="recent-activity-title">Activité récente</h3>
-      <div className="activity-list">
-        {mockActivities.map((activity, index) => {
-          const config = activityConfig[activity.type];
-          const Icon = config.icon;
-          
-          return (
-            <div 
-              key={activity.id} 
-              className="activity-item animate-slide-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className={`activity-icon ${config.color}`}>
-                <Icon size={14} />
-              </div>
-              <div className="activity-content">
-                <p className="activity-text">
-                  <span className="activity-user">{activity.user}</span>
-                  {' '}{config.label}{' '}
-                  <span className="activity-user">{activity.task}</span>
-                </p>
-                <p className="activity-time">{activity.time}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Task List Component
-type TaskStatus = 'pending' | 'accepted' | 'refused' | 'delegated' | 'completed';
-type TaskType = 'formateur' | 'membre_jury' | 'beneficiaire_formation' | 'observateur' | 'concepteur_evaluation';
-
-interface Task {
-  id: string;
-  name: string;
-  description: string;
-  status: TaskStatus;
-  type: TaskType;
-  startDate: string;
-  endDate: string;
-  direction?: string;
-  placesCount: number;
-  isRemunerated: boolean;
-}
-
-const statusConfig: Record<TaskStatus, { label: string; className: string }> = {
+const statusConfig: StatusConfig = {
   pending: { label: 'En attente', className: 'pending' },
   accepted: { label: 'Acceptée', className: 'accepted' },
   refused: { label: 'Refusée', className: 'refused' },
@@ -143,7 +25,8 @@ const statusConfig: Record<TaskStatus, { label: string; className: string }> = {
   completed: { label: 'Terminée', className: 'completed' },
 };
 
-const typeLabels: Record<TaskType, string> = {
+
+const typeLabels: TypeLabels = {
   formateur: 'Formateur',
   membre_jury: 'Membre de jury',
   beneficiaire_formation: 'Bénéficiaire',
@@ -188,6 +71,94 @@ const mockTasks: Task[] = [
     isRemunerated: false
   }
 ];
+
+const activityConfig = {
+  accepted: { icon: CheckCircle, color: 'success', label: 'a accepté' },
+  refused: { icon: XCircle, color: 'destructive', label: 'a refusé' },
+  delegated: { icon: ArrowRightLeft, color: 'delegated', label: 'a délégué' },
+  created: { icon: Clock, color: 'info', label: 'a créé' },
+  assigned: { icon: User, color: 'accent', label: 'a été assigné à' },
+};
+
+const mockActivities: ActivityItem[] = [
+  { id: '1', type: 'accepted', user: 'Ahmed Benali', task: 'Formation React Avancé', time: 'Il y a 5 min' },
+  { id: '2', type: 'delegated', user: 'Fatima Zahra', task: 'Audit Pédagogique Q1', time: 'Il y a 15 min' },
+  { id: '3', type: 'created', user: 'Mohammed Alami', task: 'Jury Certification Dev', time: 'Il y a 1h' },
+  { id: '4', type: 'refused', user: 'Sara Idrissi', task: 'Observation Stage', time: 'Il y a 2h' },
+  { id: '5', type: 'assigned', user: 'Youssef Bennani', task: 'Conception Évaluation', time: 'Il y a 3h' },
+];
+
+function StatCard({ 
+  title, 
+  value, 
+  change, 
+  changeType = 'neutral', 
+  icon: Icon,
+  iconColor = '#14b8a6'
+}: StatCardProps) {
+  return (
+    <div className="stat-card card-hover animate-fade-in">
+      <div className="stat-card-container">
+        <div className="stat-card-info">
+          <p className="stat-card-title">{title}</p>
+          <p className="stat-card-value">{value}</p>
+          {change && (
+            <p className={`stat-card-change ${changeType}`}>
+              {change}
+            </p>
+          )}
+        </div>
+        <div 
+          className="stat-card-icon-wrapper" 
+          style={{ 
+            backgroundColor: `${iconColor}1A`,
+            color: iconColor 
+          }}
+        >
+          <Icon size={20} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Recent Activity Component
+
+function RecentActivity() {
+  return (
+    <div className="recent-activity">
+      <h3 className="recent-activity-title">Activité récente</h3>
+      <div className="activity-list">
+        {mockActivities.map((activity, index) => {
+          const config = activityConfig[activity.type];
+          const Icon = config.icon;
+          
+          return (
+            <div 
+              key={activity.id} 
+              className="activity-item animate-slide-up"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className={`activity-icon ${config.color}`}>
+                <Icon size={14} />
+              </div>
+              <div className="activity-content">
+                <p className="activity-text">
+                  <span className="activity-user">{activity.user}</span>
+                  {' '}{config.label}{' '}
+                  <span className="activity-user">{activity.task}</span>
+                </p>
+                <p className="activity-time">{activity.time}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Task List Component
 
 function TaskList() {
   return (
@@ -295,7 +266,6 @@ export function Dashboard() {
               </div>
               <TaskList />
             </div>
-
             <RecentActivity />
           </div>
         </div>
