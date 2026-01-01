@@ -1,30 +1,250 @@
 import { Sidebar } from '../components/Sidebar';
 import { Navbar } from '../components/Navbar';
-import { ClipboardList, Clock, CheckCircle2 } from 'lucide-react';
-import './Dashboard.css';
+import { 
+  ClipboardList, 
+  Clock, 
+  CheckCircle2, 
+  CheckCircle, 
+  XCircle, 
+  ArrowRightLeft, 
+  User,
+  Calendar,
+  MapPin,
+  Users,
+  MoreHorizontal,
+  type LucideIcon 
+} from 'lucide-react';
+import '../Styles/Dashboard.css';
 
 interface StatCardProps {
-  label: string;
-  value: number;
-  change: string;
-  icon: React.ReactNode;
-  iconBgColor: string;
-  changeType: 'positive' | 'urgent';
+  title: string;
+  value: string | number;
+  change?: string;
+  changeType?: 'positive' | 'negative' | 'neutral';
+  icon: LucideIcon;
+  iconColor?: string;
 }
 
-function StatCard({ label, value, change, icon, iconBgColor, changeType }: StatCardProps) {
+function StatCard({ 
+  title, 
+  value, 
+  change, 
+  changeType = 'neutral', 
+  icon: Icon,
+  iconColor = '#14b8a6'
+}: StatCardProps) {
   return (
-    <div className="stat-card">
-      <div className="stat-card-content">
-        <p className="stat-card-label">{label}</p>
-        <h3 className="stat-card-value">{value}</h3>
-        <p className={`stat-card-change ${changeType}`}>
-          {change}
-        </p>
+    <div className="stat-card card-hover animate-fade-in">
+      <div className="stat-card-container">
+        <div className="stat-card-info">
+          <p className="stat-card-title">{title}</p>
+          <p className="stat-card-value">{value}</p>
+          {change && (
+            <p className={`stat-card-change ${changeType}`}>
+              {change}
+            </p>
+          )}
+        </div>
+        <div 
+          className="stat-card-icon-wrapper" 
+          style={{ 
+            backgroundColor: `${iconColor}1A`,
+            color: iconColor 
+          }}
+        >
+          <Icon size={20} />
+        </div>
       </div>
-      <div className={`stat-card-icon ${iconBgColor}`}>
-        {icon}
+    </div>
+  );
+}
+
+// Recent Activity Component
+interface ActivityItem {
+  id: string;
+  type: 'accepted' | 'refused' | 'delegated' | 'created' | 'assigned';
+  user: string;
+  task: string;
+  time: string;
+}
+
+const activityConfig = {
+  accepted: { icon: CheckCircle, color: 'success', label: 'a accepté' },
+  refused: { icon: XCircle, color: 'destructive', label: 'a refusé' },
+  delegated: { icon: ArrowRightLeft, color: 'delegated', label: 'a délégué' },
+  created: { icon: Clock, color: 'info', label: 'a créé' },
+  assigned: { icon: User, color: 'accent', label: 'a été assigné à' },
+};
+
+const mockActivities: ActivityItem[] = [
+  { id: '1', type: 'accepted', user: 'Ahmed Benali', task: 'Formation React Avancé', time: 'Il y a 5 min' },
+  { id: '2', type: 'delegated', user: 'Fatima Zahra', task: 'Audit Pédagogique Q1', time: 'Il y a 15 min' },
+  { id: '3', type: 'created', user: 'Mohammed Alami', task: 'Jury Certification Dev', time: 'Il y a 1h' },
+  { id: '4', type: 'refused', user: 'Sara Idrissi', task: 'Observation Stage', time: 'Il y a 2h' },
+  { id: '5', type: 'assigned', user: 'Youssef Bennani', task: 'Conception Évaluation', time: 'Il y a 3h' },
+];
+
+function RecentActivity() {
+  return (
+    <div className="recent-activity">
+      <h3 className="recent-activity-title">Activité récente</h3>
+      <div className="activity-list">
+        {mockActivities.map((activity, index) => {
+          const config = activityConfig[activity.type];
+          const Icon = config.icon;
+          
+          return (
+            <div 
+              key={activity.id} 
+              className="activity-item animate-slide-up"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className={`activity-icon ${config.color}`}>
+                <Icon size={14} />
+              </div>
+              <div className="activity-content">
+                <p className="activity-text">
+                  <span className="activity-user">{activity.user}</span>
+                  {' '}{config.label}{' '}
+                  <span className="activity-user">{activity.task}</span>
+                </p>
+                <p className="activity-time">{activity.time}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+// Task List Component
+type TaskStatus = 'pending' | 'accepted' | 'refused' | 'delegated' | 'completed';
+type TaskType = 'formateur' | 'membre_jury' | 'beneficiaire_formation' | 'observateur' | 'concepteur_evaluation';
+
+interface Task {
+  id: string;
+  name: string;
+  description: string;
+  status: TaskStatus;
+  type: TaskType;
+  startDate: string;
+  endDate: string;
+  direction?: string;
+  placesCount: number;
+  isRemunerated: boolean;
+}
+
+const statusConfig: Record<TaskStatus, { label: string; className: string }> = {
+  pending: { label: 'En attente', className: 'pending' },
+  accepted: { label: 'Acceptée', className: 'accepted' },
+  refused: { label: 'Refusée', className: 'refused' },
+  delegated: { label: 'Déléguée', className: 'delegated' },
+  completed: { label: 'Terminée', className: 'completed' },
+};
+
+const typeLabels: Record<TaskType, string> = {
+  formateur: 'Formateur',
+  membre_jury: 'Membre de jury',
+  beneficiaire_formation: 'Bénéficiaire',
+  observateur: 'Observateur',
+  concepteur_evaluation: 'Concepteur',
+};
+
+const mockTasks: Task[] = [
+  {
+    id: '1',
+    name: 'Formation React Avancé',
+    description: 'Formation sur les concepts avancés de React incluant hooks personnalisés, performance et patterns de conception.',
+    status: 'pending',
+    type: 'formateur',
+    startDate: '2024-02-15',
+    endDate: '2024-02-17',
+    direction: 'rabat_casa',
+    placesCount: 2,
+    isRemunerated: true
+  },
+  {
+    id: '2',
+    name: 'Jury Certification Dev',
+    description: 'Participation au jury de certification pour développeurs web niveau 5.',
+    status: 'accepted',
+    type: 'membre_jury',
+    startDate: '2024-02-20',
+    endDate: '2024-02-20',
+    placesCount: 1,
+    isRemunerated: true
+  },
+  {
+    id: '3',
+    name: 'Audit Pédagogique Q1',
+    description: 'Audit des pratiques pédagogiques du premier trimestre.',
+    status: 'delegated',
+    type: 'observateur',
+    startDate: '2024-02-25',
+    endDate: '2024-02-28',
+    direction: 'rabat_casa',
+    placesCount: 3,
+    isRemunerated: false
+  }
+];
+
+function TaskList() {
+  return (
+    <div className="task-list">
+      {mockTasks.map((task, index) => (
+        <div
+          key={task.id}
+          className="task-card card-hover animate-slide-up"
+          style={{ animationDelay: `${index * 50}ms` }}
+        >
+          <div className="task-card-inner">
+            <div className="task-main">
+              <div className="task-header">
+                <h3 className="task-name">{task.name}</h3>
+                <span className={`task-badge ${statusConfig[task.status].className}`}>
+                  {statusConfig[task.status].label}
+                </span>
+              </div>
+              
+              <p className="task-description">
+                {task.description}
+              </p>
+
+              <div className="task-meta">
+                <span className="task-meta-item">
+                  <Calendar size={14} />
+                  {new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.endDate).toLocaleDateString('fr-FR')}
+                </span>
+                {task.direction && (
+                  <span className="task-meta-item">
+                    <MapPin size={14} />
+                    {task.direction.replace('_', ' - ')}
+                  </span>
+                )}
+                <span className="task-meta-item">
+                  <Users size={14} />
+                  {task.placesCount} place{task.placesCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+
+            <div className="task-actions">
+              <span className="task-type-badge">
+                {typeLabels[task.type]}
+              </span>
+              {task.isRemunerated && (
+                <span className="task-remunerated-badge">
+                  Rémunérée
+                </span>
+              )}
+              <button className="task-menu-btn">
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -32,267 +252,51 @@ function StatCard({ label, value, change, icon, iconBgColor, changeType }: StatC
 export function Dashboard() {
   return (
     <div className="dashboard-layout">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <main className="dashboard-main">
-        {/* Navbar */}
         <Navbar
           title="Tableau de bord"
           subtitle="Bonjour, Mohammed! Voici un aperçu de votre activité."
         />
 
-        {/* Content */}
         <div className="dashboard-content">
-          {/* Stats Grid */}
           <div className="stats-grid">
             <StatCard
-              label="Tâches totales"
+              title="Tâches totales"
               value={24}
               change="+12% ce mois"
-              icon={<ClipboardList className="text-slate-600" size={24} />}
-              iconBgColor="bg-slate-100"
+              icon={ClipboardList}
+              iconColor="#64748b"
               changeType="positive"
             />
             <StatCard
-              label="En attente"
+              title="En attente"
               value={8}
               change="3 urgentes"
-              icon={<Clock className="text-amber-600" size={24} />}
-              iconBgColor="bg-amber-100"
-              changeType="urgent"
+              icon={Clock}
+              iconColor="#f59e0b"
+              changeType="negative"
             />
             <StatCard
-              label="Complétées"
+              title="Complétées"
               value={16}
               change="+5 cette semaine"
-              icon={<CheckCircle2 className="text-green-600" size={24} />}
-              iconBgColor="bg-green-100"
+              icon={CheckCircle2}
+              iconColor="#22c55e"
               changeType="positive"
             />
           </div>
 
-          {/* Recent Tasks Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-800">Tâches récentes</h2>
-              <button className="flex items-center gap-2 text-slate-600 hover:text-slate-800">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                <span className="text-sm font-medium">Filtrer</span>
-              </button>
+          <div className="content-grid">
+            <div className="tasks-section">
+              <div className="tasks-header">
+                <h2 className="tasks-title">Tâches récentes</h2>
+              </div>
+              <TaskList />
             </div>
 
-            {/* Task List */}
-            <div className="space-y-4">
-              {/* Task Item 1 */}
-              <div className="border border-slate-200 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-slate-800">Formation React Avancé</h3>
-                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                        En attente
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">
-                      Formation sur les concepts avancés de React incluant hooks personnalisés,
-                      performance et patterns de conception.
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        15/02/2024 - 17/02/2024
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        rabat - casa
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        2 places
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
-                      Rémunérée
-                    </span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                      Formateur
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Task Item 2 */}
-              <div className="border border-slate-200 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-slate-800">Audit Pédagogique Q1</h3>
-                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                        Acceptée
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">
-                      Audit trimestriel des programmes de formation et évaluation des résultats.
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        20/02/2024 - 22/02/2024
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        meknes - errachidia
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        3 places
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full">
-                      Observateur
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Task Item 3 */}
-              <div className="border border-slate-200 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-slate-800">Jury Certification Développeur</h3>
-                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                        En attente
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">
-                      Participation au jury d'évaluation pour la certification des développeurs web.
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        01/03/2024 - 01/03/2024
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        5 places
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
-                      Rémunérée
-                    </span>
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
-                      Membre de jury
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Activity Section */}
-          <div className="mt-6 bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">Activité récente</h2>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">
-                    <span className="font-semibold">Ahmed Benali</span> a accepté{' '}
-                    <span className="font-semibold">Formation React Avancé</span>
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">Il y a 5 min</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">
-                    <span className="font-semibold">Fatima Zahra</span> a délégué{' '}
-                    <span className="font-semibold">Audit Pédagogique Q1</span>
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">Il y a 15 min</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">
-                    <span className="font-semibold">Mohammed Alami</span> a créé{' '}
-                    <span className="font-semibold">Jury Certification Dev</span>
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">Il y a 1h</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">
-                    <span className="font-semibold">Sara Idrissi</span> a refusé{' '}
-                    <span className="font-semibold">Observation Stage</span>
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">Il y a 2h</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">
-                    <span className="font-semibold">Youssef Bennani</span> a été assigné à{' '}
-                    <span className="font-semibold">Conception Évaluation</span>
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">Il y a 3h</p>
-                </div>
-              </div>
-            </div>
+            <RecentActivity />
           </div>
         </div>
       </main>
