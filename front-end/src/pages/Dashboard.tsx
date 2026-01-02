@@ -1,5 +1,3 @@
-import { Sidebar } from '../components/Sidebar';
-import { Navbar } from '../components/Navbar';
 import { 
   ClipboardList, 
   Clock, 
@@ -11,7 +9,9 @@ import {
   Calendar,
   MapPin,
   Users,
-  MoreHorizontal
+  MoreHorizontal,
+  Plus,
+  Filter
 } from 'lucide-react';
 import '../Styles/Dashboard.css';
 import type { StatCardProps,ActivityItem,Task,StatusConfig,TypeLabels } from "../types/Dashboard.d";
@@ -222,17 +222,12 @@ function TaskList() {
 
 export function Dashboard() {
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-
-      <main className="dashboard-main">
-        <Navbar
-          title="Tableau de bord"
-          subtitle="Bonjour, Mohammed! Voici un aperçu de votre activité."
-        />
-
-        <div className="dashboard-content">
-          <div className="stats-grid">
+    <div className="dashboard-content">
+      <div className="dashboard-welcome">
+        <h1 className="welcome-title">Bonjour, Mohammed!</h1>
+        <p className="welcome-subtitle">Voici un aperçu de votre activité</p>
+      </div>
+      <div className="stats-grid">
             <StatCard
               title="Tâches totales"
               value={24}
@@ -257,19 +252,56 @@ export function Dashboard() {
               iconColor="#22c55e"
               changeType="positive"
             />
+            <StatCard
+              title="Auditeurs actifs"
+              value={12}
+              change="+3 ce mois"
+              icon={Users}
+              iconColor="#8b5cf6"
+              changeType="positive"
+            />
           </div>
 
           <div className="content-grid">
             <div className="tasks-section">
               <div className="tasks-header">
                 <h2 className="tasks-title">Tâches récentes</h2>
+                <div className="tasks-header-actions">
+                  <button className="filter-button">
+                    <Filter className="button-icon" />
+                    Filtrer
+                  </button>
+                  <button className="create-task-button">
+                    <Plus className="button-icon" />
+                    Nouvelle tâche
+                  </button>
+                </div>
               </div>
               <TaskList />
             </div>
-            <RecentActivity />
+            <div className="right-column">
+              <RecentActivity />
+              
+              {/* Quick Actions */}
+              <div className="quick-actions-card">
+                <h3 className="quick-actions-title">Actions rapides</h3>
+                <div className="quick-actions-list">
+                  <button className="action-button">
+                    <Plus className="action-icon" />
+                    Créer une tâche
+                  </button>
+                  <button className="action-button">
+                    <Users className="action-icon" />
+                    Ajouter un auditeur
+                  </button>
+                  <button className="action-button">
+                    <ClipboardList className="action-icon" />
+                    Mes tâches
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </main>
-    </div>
   );
 }

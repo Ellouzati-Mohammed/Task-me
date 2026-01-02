@@ -1,0 +1,15 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.app-main {
+  margin-left: 256px;
+  flex: 1;
+  transition: margin-left 0.3s;
+}
+
+.app-main.sidebar-collapsed {
+  margin-left: 64px;
+}

@@ -12,22 +12,23 @@ import {
   Menu,
 } from 'lucide-react';
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import '../Styles/Sidebar.css';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Tableau de bord', href: '#dashboard' },
-  { icon: ClipboardList, label: 'Tâches', href: '#tasks' },
-  { icon: Users, label: 'Utilisateurs', href: '#users' },
-  { icon: Car, label: 'Véhicules', href: '#vehicles' },
-  { icon: Bell, label: 'Notifications', href: '#notifications' },
-  { icon: MessageSquare, label: 'Messages', href: '#messages' },
-  { icon: History, label: 'Historique', href: '#history' },
-  { icon: Settings, label: 'Paramètres', href: '#settings' },
+  { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard' },
+  { icon: ClipboardList, label: 'Tâches', href: '/tasks' },
+  { icon: Users, label: 'Utilisateurs', href: '/users' },
+  { icon: Car, label: 'Véhicules', href: '/vehicles' },
+  { icon: Bell, label: 'Notifications', href: '/notifications' },
+  { icon: MessageSquare, label: 'Messages', href: '/messages' },
+  { icon: History, label: 'Historique', href: '/history' },
+  { icon: Settings, label: 'Paramètres', href: '/settings' },
 ];
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeHref, setActiveHref] = useState('#dashboard');
+  const location = useLocation();
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
@@ -35,12 +36,12 @@ export function Sidebar() {
         {/* Logo */}
         <div className="sidebar-header">
           {!isCollapsed && (
-            <a href="#dashboard" className="sidebar-logo">
+            <Link to="/dashboard" className="sidebar-logo">
               <div className="sidebar-logo-icon">
                 <span>T</span>
               </div>
               <span className="sidebar-logo-text">Taskme</span>
-            </a>
+            </Link>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -53,22 +54,18 @@ export function Sidebar() {
         {/* Navigation */}
         <nav className="sidebar-nav">
           {navItems.map((item) => {
-            const isActive = activeHref === item.href;
+            const isActive = location.pathname === item.href;
             const Icon = item.icon;
             return (
-              <a
+              <Link
                 key={item.href}
-                href={item.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveHref(item.href);
-                }}
+                to={item.href}
                 className={`sidebar-nav-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''}`}
                 title={isCollapsed ? item.label : undefined}
               >
                 <Icon className="sidebar-nav-icon" />
                 {!isCollapsed && <span>{item.label}</span>}
-              </a>
+              </Link>
             );
           })}
         </nav>
