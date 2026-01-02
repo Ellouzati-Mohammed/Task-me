@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar'
 import { Navbar } from './components/Navbar'
 import { Dashboard } from './pages/Dashboard'
 import { Tasks } from './pages/Tasks'
+import { Users } from './pages/Users'
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/users" element={<Dashboard />} />
+            <Route path="/users" element={<Users />} />
             <Route path="/vehicles" element={<Dashboard />} />
             <Route path="/notifications" element={<Dashboard />} />
             <Route path="/messages" element={<Dashboard />} />

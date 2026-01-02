@@ -1,16 +1,12 @@
 import { 
-  Search,
-  Filter,
-  List,
-  Grid,
-  Plus,
   Calendar,
   MapPin,
   Users,
   MoreHorizontal,
-  SlidersHorizontal
+  Filter
 } from 'lucide-react';
 import { useState } from 'react';
+import { PageHeader } from '../components/PageHeader';
 import '../Styles/Tasks.css';
 import type { Task, TaskStatus, StatusConfig, TypeLabels } from "../types/Dashboard.d";
 
@@ -115,73 +111,21 @@ export function Tasks() {
 
   return (
     <div className="tasks-page">
-      <div className="tasks-header-section">
-        <div>
-          <h1 className="tasks-page-title">Gestion des tâches</h1>
-          <p className="tasks-page-subtitle">Consultez et gérez toutes les tâches et missions</p>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="tasks-toolbar">
-        <div className="search-box">
-          <Search className="search-icon" size={16} />
-          <input 
-            type="text" 
-            placeholder="Rechercher une tâche..." 
-            className="search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div className="toolbar-actions">
-          <button className="toolbar-icon-button" title="Filtres">
-            <SlidersHorizontal size={16} />
-          </button>
-          <div className="view-mode-toggle">
-            <button 
-              className={`view-mode-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              <List size={16} />
-            </button>
-            <button 
-              className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-            >
-              <Grid size={16} />
-            </button>
-          </div>
-          <button className="new-task-btn">
-            <Plus size={16} />
-            Nouvelle tâche
-          </button>
-        </div>
-      </div>
-
-      {/* Status Filters */}
-      <div className="status-badges">
-        {statusFilters.map((filter) => (
-          <button
-            key={filter.value}
-            className={`status-badge ${statusFilter === filter.value ? 'active' : ''}`}
-            onClick={() => setStatusFilter(filter.value)}
-          >
-            {filter.label}
-            {filter.value !== 'all' && (
-              <span className="status-badge-count">
-                {mockTasks.filter(t => t.status === filter.value).length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Results count */}
-      <p className="results-count">
-        {filteredTasks.length} tâche{filteredTasks.length > 1 ? 's' : ''} trouvée{filteredTasks.length > 1 ? 's' : ''}
-      </p>
+      <PageHeader
+        title="Gestion des tâches"
+        subtitle="Consultez et gérez toutes les tâches et missions"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filters={statusFilters}
+        activeFilter={statusFilter}
+        onFilterChange={(value) => setStatusFilter(value as 'all' | TaskStatus)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onNewClick={() => console.log('New task')}
+        newButtonText="Nouvelle tâche"
+        resultsCount={filteredTasks.length}
+        getFilterCount={(value) => value === 'all' ? mockTasks.length : mockTasks.filter(t => t.status === value).length}
+      />
 
       {/* Task List */}
       {filteredTasks.length > 0 ? (
