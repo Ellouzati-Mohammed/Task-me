@@ -6,6 +6,9 @@ import { Navbar } from './components/Navbar'
 import { Dashboard } from './pages/Dashboard'
 import { Tasks } from './pages/Tasks'
 import { Users } from './pages/Users'
+import { Vehicles } from './pages/Vehicles'
+import { Notifications } from './pages/Notifications'
+import { Messages } from './pages/Messages'
 
 function App() {
   return (
@@ -19,9 +22,9 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/users" element={<Users />} />
-            <Route path="/vehicles" element={<Dashboard />} />
-            <Route path="/notifications" element={<Dashboard />} />
-            <Route path="/messages" element={<Dashboard />} />
+            <Route path="/vehicles" element={<Vehicles />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/history" element={<Dashboard />} />
             <Route path="/settings" element={<Dashboard />} />
           </Routes>
