@@ -158,21 +158,21 @@ export function Users() {
                   </div>
                 </div>
                 <button className="user-menu-button">
-                  <MoreHorizontal size={18} />
+                  <MoreHorizontal size={16} />
                 </button>
               </div>
 
               <div className="user-card-body">
                 <div className="user-info-item">
-                  <Mail size={16} className="user-info-icon" />
+                  <Mail size={14} className="user-info-icon" />
                   <span className="user-info-text">{user.email}</span>
                 </div>
                 <div className="user-info-item">
-                  <Briefcase size={16} className="user-info-icon" />
+                  <Briefcase size={14} className="user-info-icon" />
                   <span className="user-info-text">{roleConfig[user.role].label}</span>
                 </div>
                 <div className="user-info-item">
-                  <GraduationCap size={16} className="user-info-icon" />
+                  <GraduationCap size={14} className="user-info-icon" />
                   <span className="user-info-text">{user.department}</span>
                 </div>
               </div>

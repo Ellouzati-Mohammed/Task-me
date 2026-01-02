@@ -5,8 +5,7 @@ import {
   Car,
   Bell,
   MessageSquare,
-  History,
-  Settings,
+  UserCircle,
   LogOut,
   ChevronLeft,
   Menu,
@@ -22,8 +21,7 @@ const navItems = [
   { icon: Car, label: 'Véhicules', href: '/vehicles' },
   { icon: Bell, label: 'Notifications', href: '/notifications' },
   { icon: MessageSquare, label: 'Messages', href: '/messages' },
-  { icon: History, label: 'Historique', href: '/history' },
-  { icon: Settings, label: 'Paramètres', href: '/settings' },
+  { icon: UserCircle, label: 'Profil', href: '/settings' },
 ];
 
 export function Sidebar() {

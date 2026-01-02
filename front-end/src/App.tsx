@@ -9,6 +9,7 @@ import { Users } from './pages/Users'
 import { Vehicles } from './pages/Vehicles'
 import { Notifications } from './pages/Notifications'
 import { Messages } from './pages/Messages'
+import { Profile } from './pages/Profile'
 
 function App() {
   return (
@@ -25,8 +26,7 @@ function App() {
             <Route path="/vehicles" element={<Vehicles />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/messages" element={<Messages />} />
-            <Route path="/history" element={<Dashboard />} />
-            <Route path="/settings" element={<Dashboard />} />
+            <Route path="/settings" element={<Profile />} />
           </Routes>
         </main>
       </div>
