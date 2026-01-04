@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
+import { TaskFormModal } from '../components/TaskFormModal';
 import '../Styles/Tasks.css';
 import type { Task, TaskStatus, StatusConfig, TypeLabels } from "../types/Dashboard.d";
 
@@ -101,6 +102,7 @@ export function Tasks() {
   const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredTasks = mockTasks.filter(task => {
     const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,7 +123,7 @@ export function Tasks() {
         onFilterChange={(value) => setStatusFilter(value as 'all' | TaskStatus)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        onNewClick={() => console.log('New task')}
+        onNewClick={() => setShowCreateModal(true)}
         newButtonText="Nouvelle tâche"
         resultsCount={filteredTasks.length}
         getFilterCount={(value) => value === 'all' ? mockTasks.length : mockTasks.filter(t => t.status === value).length}
@@ -186,6 +188,8 @@ export function Tasks() {
           </p>
         </div>
       )}
+
+      {showCreateModal && <TaskFormModal onClose={() => setShowCreateModal(false)} mode="create" />}
     </div>
   );
 }

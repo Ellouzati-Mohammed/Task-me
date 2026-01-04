@@ -10,26 +10,32 @@ import { Vehicles } from './pages/Vehicles'
 import { Notifications } from './pages/Notifications'
 import { Messages } from './pages/Messages'
 import { Profile } from './pages/Profile'
+import { Login } from './pages/Login'
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="app-layout">
-        <Sidebar />
-        <main className="app-main">
-          <Navbar title="Tableau de bord" />
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/vehicles" element={<Vehicles />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/settings" element={<Profile />} />
-          </Routes>
-        </main>
-      </div>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/*" element={
+          <div className="app-layout">
+            <Sidebar />
+            <main className="app-main">
+              <Navbar title="Tableau de bord" />
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/tasks" element={<Tasks />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/vehicles" element={<Vehicles />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/settings" element={<Profile />} />
+              </Routes>
+            </main>
+          </div>
+        } />
+      </Routes>
     </BrowserRouter>
   )
 }
