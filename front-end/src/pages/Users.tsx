@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
+import { UserFormModal } from '../components/UserFormModal';
 import '../Styles/Users.css';
 import type { User, UserStatus } from "../types/User.d";
 
@@ -100,6 +101,7 @@ export function Users() {
   const [statusFilter, setStatusFilter] = useState<'all' | UserStatus>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredUsers = mockUsers.filter(user => {
     const matchesSearch = user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -133,7 +135,7 @@ export function Users() {
         onFilterChange={(value) => setStatusFilter(value as 'all' | UserStatus)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        onNewClick={() => console.log('New user')}
+        onNewClick={() => setShowCreateModal(true)}
         newButtonText="Nouvel utilisateur"
         resultsCount={filteredUsers.length}
         getFilterCount={(value) => value === 'all' ? mockUsers.length : mockUsers.filter(u => u.status === value).length}
@@ -200,6 +202,8 @@ export function Users() {
           </p>
         </div>
       )}
+
+      {showCreateModal && <UserFormModal onClose={() => setShowCreateModal(false)} mode="create" />}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
+import { VehicleFormModal } from '../components/VehicleFormModal';
 import '../Styles/Vehicles.css';
 import type { Vehicle, VehicleStatus } from "../types/Vehicle.d";
 
@@ -81,6 +82,7 @@ export function Vehicles() {
   const [statusFilter, setStatusFilter] = useState<'all' | VehicleStatus>('all');
   const [viewMode] = useState<'list' | 'grid'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredVehicles = mockVehicles.filter(vehicle => {
     const matchesSearch = vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,7 +137,7 @@ export function Vehicles() {
         filters={statusFilters}
         activeFilter={statusFilter}
         onFilterChange={(value) => setStatusFilter(value as 'all' | VehicleStatus)}
-        onNewClick={() => console.log('New vehicle')}
+        onNewClick={() => setShowCreateModal(true)}
         newButtonText="Ajouter un véhicule"
         resultsCount={filteredVehicles.length}
         getFilterCount={(value) => value === 'all' ? mockVehicles.length : mockVehicles.filter(v => v.status === value).length}
@@ -193,6 +195,8 @@ export function Vehicles() {
           </p>
         </div>
       )}
+
+      {showCreateModal && <VehicleFormModal onClose={() => setShowCreateModal(false)} mode="create" />}
     </div>
   );
 }

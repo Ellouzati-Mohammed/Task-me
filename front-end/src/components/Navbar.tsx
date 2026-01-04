@@ -1,10 +1,14 @@
 import { Search, Bell } from 'lucide-react';
 import '../Styles/Navbar.css';
+import { useAuth } from '../contexts/AuthContext';
 import type { NavbarProps } from "../types/Navbar";
 
 
 
 export function Navbar({ title, subtitle }: NavbarProps) {
+  const { user } = useAuth();
+  const userInitials = user ? `${user.prenom[0]}${user.nom[0]}`.toUpperCase() : 'MA';
+
   return (
     <header className="navbar">
       <div className="navbar-container">
@@ -32,7 +36,7 @@ export function Navbar({ title, subtitle }: NavbarProps) {
           {/* User avatar */}
           <div className="navbar-user-container">
             <div className="navbar-avatar">
-              <span className="navbar-avatar-text">MA</span>
+              <span className="navbar-avatar-text">{userInitials}</span>
             </div>
           </div>
         </div>

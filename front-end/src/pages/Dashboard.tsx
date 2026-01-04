@@ -10,9 +10,11 @@ import {
   MapPin,
   Users,
   MoreHorizontal,
-  Plus,
-  Filter
+  Plus
 } from 'lucide-react';
+import { useState } from 'react';
+import { TaskFormModal } from '../components/TaskFormModal';
+import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Dashboard.css';
 import type { StatCardProps,ActivityItem,Task,StatusConfig,TypeLabels } from "../types/Dashboard.d";
 
@@ -221,10 +223,13 @@ function TaskList() {
 }
 
 export function Dashboard() {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { user } = useAuth();
+
   return (
     <div className="dashboard-content">
       <div className="dashboard-welcome">
-        <h1 className="welcome-title">Bonjour, Mohammed!</h1>
+        <h1 className="welcome-title">Bonjour, {user?.prenom}!</h1>
         <p className="welcome-subtitle">Voici un aperçu de votre activité</p>
       </div>
       <div className="stats-grid">
@@ -267,11 +272,7 @@ export function Dashboard() {
               <div className="tasks-header">
                 <h2 className="tasks-title">Tâches récentes</h2>
                 <div className="tasks-header-actions">
-                  <button className="filter-button">
-                    <Filter className="button-icon" />
-                    Filtrer
-                  </button>
-                  <button className="create-task-button">
+                  <button className="create-task-button" onClick={() => setShowCreateModal(true)}>
                     <Plus className="button-icon" />
                     Nouvelle tâche
                   </button>
@@ -286,7 +287,7 @@ export function Dashboard() {
               <div className="quick-actions-card">
                 <h3 className="quick-actions-title">Actions rapides</h3>
                 <div className="quick-actions-list">
-                  <button className="action-button">
+                  <button className="action-button" onClick={() => setShowCreateModal(true)}>
                     <Plus className="action-icon" />
                     Créer une tâche
                   </button>
@@ -302,6 +303,13 @@ export function Dashboard() {
               </div>
             </div>
           </div>
+
+          {showCreateModal && (
+            <TaskFormModal 
+              onClose={() => setShowCreateModal(false)} 
+              mode="create"
+            />
+          )}
         </div>
   );
 }

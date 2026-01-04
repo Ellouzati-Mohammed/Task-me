@@ -21,7 +21,7 @@ const navItems = [
   { icon: Car, label: 'Véhicules', href: '/vehicles' },
   { icon: Bell, label: 'Notifications', href: '/notifications' },
   { icon: MessageSquare, label: 'Messages', href: '/messages' },
-  { icon: UserCircle, label: 'Profil', href: '/settings' },
+  { icon: UserCircle, label: 'Profil', href: '/profile' },
 ];
 
 export function Sidebar() {

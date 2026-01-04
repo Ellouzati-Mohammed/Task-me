@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save, X, Upload, Calendar, Users, MapPin, FileText } from 'lucide-react';
 import '../Styles/TaskFormModal.css';
-import type { TaskFormData, TypeTache, Specialite, Grade, DirectionAssociee } from '../types/TaskForm.d';
-
-interface TaskFormModalProps {
-  onClose: () => void;
-  task?: TaskFormData & { id?: string }; // task optionnel pour mode édition
-  mode?: 'create' | 'edit';
-}
+import type { TaskFormData, TypeTache, Specialite, Grade, DirectionAssociee, TaskFormModalProps } from '../types/TaskForm.d';
 
 const typeTacheOptions = [
   { value: 'formateur' as TypeTache, label: 'Formateur' },
@@ -40,17 +34,17 @@ const initialFormData: TaskFormData = {
   nom: '',
   description: '',
   typeTache: 'formateur',
+  statutTache: 'creee',
   dateDebut: '',
   dateFin: '',
+  dateCreation: new Date().toISOString().split('T')[0],
   remuneree: false,
   specialites: [],
   grades: [],
-  commune: false,
   necessiteVehicule: false,
   directionAssociee: 'rabat_casa',
   nombrePlaces: 1,
-  urgent: false,
-  lieu: ''
+  urgent: false
 };
 
 export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalProps) {
@@ -166,31 +160,6 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
               </div>
 
               <div className="form-group">
-                <label className="form-label">Direction associée *</label>
-                <select
-                  className="form-select"
-                  value={formData.directionAssociee}
-                  onChange={(e) => setFormData(prev => ({ ...prev, directionAssociee: e.target.value as DirectionAssociee }))}
-                  required
-                >
-                  {directionOptions.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Lieu</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.lieu}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lieu: e.target.value }))}
-                  placeholder="Ex: Rabat, Salle A"
-                />
-              </div>
-
-              <div className="form-group">
                 <label className="form-label">Nombre de places *</label>
                 <input
                   type="number"
@@ -200,6 +169,40 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                   min={1}
                   required
                 />
+              </div>
+
+              <div className="form-group full-width">
+                <div className="vehicle-section">
+                  <div className="vehicle-checkbox-group">
+                    <label className="form-label">Véhicule</label>
+                    <label className="switch-label">
+                      <input
+                        type="checkbox"
+                        checked={formData.necessiteVehicule}
+                        onChange={(e) => setFormData(prev => ({ ...prev, necessiteVehicule: e.target.checked }))}
+                      />
+                      <span className="switch-text">Nécessite un véhicule</span>
+                    </label>
+                  </div>
+
+                  <div className="form-group direction-group">
+                    <label className="form-label">Direction associée *</label>
+                    <select
+                      className={`form-select ${!formData.necessiteVehicule ? 'disabled' : ''}`}
+                      value={formData.directionAssociee}
+                      onChange={(e) => setFormData(prev => ({ ...prev, directionAssociee: e.target.value as DirectionAssociee }))}
+                      disabled={!formData.necessiteVehicule}
+                      required
+                    >
+                      {directionOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                    {!formData.necessiteVehicule && (
+                      <p className="form-hint">Activez "Nécessite un véhicule" pour sélectionner une direction</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -299,24 +302,6 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                   onChange={(e) => setFormData(prev => ({ ...prev, remuneree: e.target.checked }))}
                 />
                 <span className="switch-text">Tâche rémunérée</span>
-              </label>
-
-              <label className="switch-label">
-                <input
-                  type="checkbox"
-                  checked={formData.commune}
-                  onChange={(e) => setFormData(prev => ({ ...prev, commune: e.target.checked }))}
-                />
-                <span className="switch-text">Tâche commune</span>
-              </label>
-
-              <label className="switch-label">
-                <input
-                  type="checkbox"
-                  checked={formData.necessiteVehicule}
-                  onChange={(e) => setFormData(prev => ({ ...prev, necessiteVehicule: e.target.checked }))}
-                />
-                <span className="switch-text">Nécessite un véhicule</span>
               </label>
             </div>
           </div>
