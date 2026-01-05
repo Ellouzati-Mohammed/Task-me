@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   ClipboardList,
+  ClipboardCheck,
   Users,
   Car,
   Bell,
@@ -12,21 +13,24 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Sidebar.css';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard' },
-  { icon: ClipboardList, label: 'Tâches', href: '/tasks' },
-  { icon: Users, label: 'Utilisateurs', href: '/users' },
-  { icon: Car, label: 'Véhicules', href: '/vehicles' },
-  { icon: Bell, label: 'Notifications', href: '/notifications' },
-  { icon: MessageSquare, label: 'Messages', href: '/messages' },
-  { icon: UserCircle, label: 'Profil', href: '/profile' },
+  { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard', roles: ['admin', 'coordinateur'] },
+  { icon: ClipboardList, label: 'Tâches', href: '/tasks', roles: ['admin', 'coordinateur'] },
+  { icon: ClipboardCheck, label: 'Mes tâches', href: '/my-tasks', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: Users, label: 'Utilisateurs', href: '/users', roles: ['admin', 'coordinateur'] },
+  { icon: Car, label: 'Véhicules', href: '/vehicles', roles: ['admin', 'coordinateur'] },
+  { icon: Bell, label: 'Notifications', href: '/notifications', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: MessageSquare, label: 'Messages', href: '/messages', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: UserCircle, label: 'Profil', href: '/profile', roles: ['admin', 'coordinateur', 'auditeur'] },
 ];
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
@@ -51,21 +55,23 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`sidebar-nav-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''}`}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className="sidebar-nav-icon" />
-                {!isCollapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => user && item.roles.includes(user.role))
+            .map((item) => {
+              const isActive = location.pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`sidebar-nav-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''}`}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <Icon className="sidebar-nav-icon" />
+                  {!isCollapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
         </nav>
 
         {/* User section */}

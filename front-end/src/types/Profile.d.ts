@@ -5,7 +5,6 @@ export interface UserProfile {
   email: string;
   phone: string;
   role: string;
-  department: string;
   grade: string;
   hireDate: string;
   avatar?: string;

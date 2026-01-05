@@ -395,6 +395,60 @@
   color: #64748b;
 }
 
+/* Task Action Buttons */
+.task-action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.task-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.task-action-btn.accept {
+  background-color: #d1fae5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.task-action-btn.accept:hover {
+  background-color: #a7f3d0;
+  border-color: #059669;
+}
+
+.task-action-btn.refuse {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.task-action-btn.refuse:hover {
+  background-color: #fecaca;
+  border-color: #dc2626;
+}
+
+.task-action-btn.delegate {
+  background-color: #e0e7ff;
+  border-color: #6366f1;
+  color: #3730a3;
+}
+
+.task-action-btn.delegate:hover {
+  background-color: #c7d2fe;
+  border-color: #4f46e5;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .tasks-page {

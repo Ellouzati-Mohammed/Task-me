@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { User, Mail, Phone, Briefcase, GraduationCap, Lock, Save } from 'lucide-react';
+import { User, Mail, Phone, GraduationCap, Lock, Save } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Profile.css';
 import type { UserProfile } from '../types/Profile.d';
 
@@ -10,12 +11,13 @@ const mockProfile: UserProfile = {
   email: 'mohammed.alami@taskme.com',
   phone: '+212 6 12 34 56 78',
   role: 'Admin',
-  department: 'Informatique',
+
   grade: 'A',
   hireDate: '2020-01-15'
 };
 
 export function Profile() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(mockProfile);
   const [activeTab, setActiveTab] = useState<'info' | 'password'>('info');
   const [isEditing, setIsEditing] = useState(false);
@@ -64,14 +66,13 @@ export function Profile() {
           </div>
 
           <div className="profile-stats-card">
-            <div className="profile-stat-item">
-              <span className="stat-label">Département</span>
-              <span className="stat-value">{profile.department}</span>
-            </div>
-            <div className="profile-stat-item">
-              <span className="stat-label">Grade</span>
-              <span className="stat-value">Grade {profile.grade}</span>
-            </div>
+           
+            {user?.role === 'auditeur' && (
+              <div className="profile-stat-item">
+                <span className="stat-label">Grade</span>
+                <span className="stat-value">Grade {profile.grade}</span>
+              </div>
+            )}
             <div className="profile-stat-item">
               <span className="stat-label">Date d'embauche</span>
               <span className="stat-value">{new Date(profile.hireDate).toLocaleDateString('fr-FR')}</span>
@@ -177,31 +178,22 @@ export function Profile() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">
-                      <Briefcase size={14} />
-                      Département
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={profile.department}
-                      disabled
-                    />
-                  </div>
+                 
 
-                  <div className="form-group">
-                    <label className="form-label">
-                      <GraduationCap size={14} />
-                      Grade
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={`Grade ${profile.grade}`}
-                      disabled
-                    />
-                  </div>
+                  {user?.role === 'auditeur' && (
+                    <div className="form-group">
+                      <label className="form-label">
+                        <GraduationCap size={14} />
+                        Grade
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={`Grade ${profile.grade}`}
+                        disabled
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
