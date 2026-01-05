@@ -1,0 +1,93 @@
+import {
+  LayoutDashboard,
+  ClipboardList,
+  ClipboardCheck,
+  Users,
+  Car,
+  Bell,
+  MessageSquare,
+  UserCircle,
+  LogOut,
+  ChevronLeft,
+  Menu,
+} from 'lucide-react';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import '../Styles/Sidebar.css';
+
+const navItems = [
+  { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard', roles: ['admin', 'coordinateur'] },
+  { icon: ClipboardList, label: 'Tâches', href: '/tasks', roles: ['admin', 'coordinateur'] },
+  { icon: ClipboardCheck, label: 'Mes tâches', href: '/my-tasks', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: Users, label: 'Utilisateurs', href: '/users', roles: ['admin', 'coordinateur'] },
+  { icon: Car, label: 'Véhicules', href: '/vehicles', roles: ['admin', 'coordinateur'] },
+  { icon: Bell, label: 'Notifications', href: '/notifications', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: MessageSquare, label: 'Messages', href: '/messages', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: UserCircle, label: 'Profil', href: '/profile', roles: ['admin', 'coordinateur', 'auditeur'] },
+];
+
+export function Sidebar() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const location = useLocation();
+  const { user } = useAuth();
+
+  return (
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+      <div className="sidebar-container">
+        {/* Logo */}
+        <div className="sidebar-header">
+          {!isCollapsed && (
+            <Link to="/dashboard" className="sidebar-logo">
+              <div className="sidebar-logo-icon">
+                <span>T</span>
+              </div>
+              <span className="sidebar-logo-text">Taskme</span>
+            </Link>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="sidebar-toggle-btn"
+          >
+            {isCollapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="sidebar-nav">
+          {navItems
+            .filter((item) => user && item.roles.includes(user.role))
+            .map((item) => {
+              const isActive = location.pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`sidebar-nav-link ${isActive ? 'active' : ''} ${isCollapsed ? 'collapsed' : ''}`}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <Icon className="sidebar-nav-icon" />
+                  {!isCollapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+        </nav>
+
+        {/* User section */}
+        <div className="sidebar-user-section">
+          {!isCollapsed && (
+            <div className="sidebar-user-info">
+              <p className="sidebar-user-name">Mohammed Alami</p>
+              <p className="sidebar-user-role">Super Admin</p>
+            </div>
+          )}
+          <button className={`sidebar-logout-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+            <LogOut size={20} />
+            {!isCollapsed && <span>Déconnexion</span>}
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
