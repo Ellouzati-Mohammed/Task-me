@@ -3,20 +3,27 @@ import {
   MapPin,
   Users,
   MoreHorizontal,
-  Filter
+  Filter,
+  Pencil,
+  Trash2,
+  UserPlus
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { TaskFormModal } from '../components/TaskFormModal';
+import { AffectationModal } from '../components/AffectationModal';
+import { TaskDetailModal } from '../components/TaskDetailModal';
 import '../Styles/Tasks.css';
 import type { Task, TaskStatus, StatusConfig, TypeLabels } from "../types/Dashboard.d";
+import api from '../services/api';
 
 const statusConfig: StatusConfig = {
-  pending: { label: 'En attente', className: 'pending' },
-  accepted: { label: 'Acceptée', className: 'accepted' },
-  refused: { label: 'Refusée', className: 'refused' },
-  delegated: { label: 'Déléguée', className: 'delegated' },
+  pending: { label: 'Créée', className: 'pending' },
+  affectation: { label: 'En affectation', className: 'affectation' },
+  affectee: { label: 'Complétée/Affectée', className: 'affectee' },
+  encours: { label: 'En cours', className: 'encours' },
   completed: { label: 'Terminée', className: 'completed' },
+  cancelled: { label: 'Annulée', className: 'cancelled' },
 };
 
 const typeLabels: TypeLabels = {
@@ -29,82 +36,164 @@ const typeLabels: TypeLabels = {
 
 const statusFilters = [
   { value: 'all' as const, label: 'Toutes' },
-  { value: 'pending' as const, label: 'En attente' },
-  { value: 'accepted' as const, label: 'Acceptées' },
-  { value: 'refused' as const, label: 'Refusées' },
-  { value: 'delegated' as const, label: 'Déléguées' },
+  { value: 'pending' as const, label: 'Créées' },
+  { value: 'affectation' as const, label: 'En affectation' },
+  { value: 'affectee' as const, label: 'Affectées' },
+  { value: 'encours' as const, label: 'En cours' },
   { value: 'completed' as const, label: 'Terminées' },
+  { value: 'cancelled' as const, label: 'Annulées' },
 ];
 
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    name: 'Formation React Avancé',
-    description: 'Formation sur les concepts avancés de React incluant hooks personnalisés, performance et patterns de conception.',
-    status: 'pending',
-    type: 'formateur',
-    startDate: '2024-02-15',
-    endDate: '2024-02-17',
-    direction: 'rabat_casa',
-    placesCount: 2,
-    isRemunerated: true
-  },
-  {
-    id: '2',
-    name: 'Audit Pédagogique Q1',
-    description: 'Audit trimestriel des programmes de formation et évaluation des résultats.',
-    status: 'accepted',
-    type: 'observateur',
-    startDate: '2024-02-20',
-    endDate: '2024-02-22',
-    direction: 'meknes_errachidia',
-    placesCount: 3,
-    isRemunerated: true
-  },
-  {
-    id: '3',
-    name: 'Jury Certification Développeur',
-    description: 'Participation au jury d\'évaluation pour la certification des développeurs web.',
-    status: 'pending',
-    type: 'membre_jury',
-    startDate: '2024-03-01',
-    endDate: '2024-03-01',
-    placesCount: 5,
-    isRemunerated: true
-  },
-  {
-    id: '4',
-    name: 'Conception Évaluation Annuelle',
-    description: 'Élaboration des évaluations annuelles pour les programmes de formation.',
-    status: 'delegated',
-    type: 'concepteur_evaluation',
-    startDate: '2024-02-10',
-    endDate: '2024-02-15',
-    direction: 'rabat_casa',
-    placesCount: 2,
-    isRemunerated: true
-  },
-  {
-    id: '5',
-    name: 'Formation Continue Formateurs',
-    description: 'Session de formation continue pour les formateurs sur les nouvelles méthodologies pédagogiques.',
-    status: 'completed',
-    type: 'formateur',
-    startDate: '2024-01-15',
-    endDate: '2024-01-18',
-    direction: 'meknes_errachidia',
-    placesCount: 4,
-    isRemunerated: true
-  }
-];
+// Fonctions de mapping pour convertir les données de l'API
+const mapStatutToStatus = (statut: string): TaskStatus => {
+  const mapping: Record<string, TaskStatus> = {
+    'CREEE': 'pending',
+    'EN_AFFECTATION': 'affectation',
+    'COMPLETEE_AFFECTEE': 'affectee',
+    'EN_COURS': 'encours',
+    'TERMINEE': 'completed',
+    'ANNULEE': 'cancelled'
+  };
+  return mapping[statut] || 'pending';
+};
+
+const mapTypeTacheToType = (typeTache: string): TaskType => {
+  const mapping: Record<string, TaskType> = {
+    'Formateur': 'formateur',
+    'Membre de Jury': 'membre_jury',
+    'Bénéficiaire de formation': 'beneficiaire_formation',
+    'Observateur': 'observateur',
+    'Concepteur': 'concepteur_evaluation'
+  };
+  return mapping[typeTache] || 'formateur';
+};
 
 export function Tasks() {
   const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [showAffectationModal, setShowAffectationModal] = useState(false);
+  const [selectedTaskForAffectation, setSelectedTaskForAffectation] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<string | null>(null);
 
-  const filteredTasks = mockTasks.filter(task => {
+  // Charger les tâches depuis l'API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/tasks');
+        const apiTasks = response.data.data || response.data;
+        
+        // Mapper les données de l'API au format attendu
+        const mappedTasks = apiTasks.map((task: any) => ({
+          id: task._id,
+          name: task.nom,
+          description: task.description,
+          status: mapStatutToStatus(task.statutTache),
+          type: mapTypeTacheToType(task.typeTache),
+          startDate: task.dateDebut,
+          endDate: task.dateFin,
+          direction: task.directionAssociee,
+          placesCount: task.nombrePlaces,
+          isRemunerated: task.remuneree
+        }));
+        
+        setTasks(mappedTasks);
+      } catch (error) {
+        console.error('Erreur lors du chargement des tâches:', error);
+        setTasks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  // Recharger les tâches après création/modification
+  const handleTaskUpdated = () => {
+    setShowCreateModal(false);
+    setEditingTask(null);
+    const fetchTasks = async () => {
+      try {
+        const response = await api.get('/tasks');
+        const apiTasks = response.data.data || response.data;
+        
+        // Mapper les données de l'API au format attendu
+        const mappedTasks = apiTasks.map((task: any) => ({
+          id: task._id,
+          name: task.nom,
+          description: task.description,
+          status: mapStatutToStatus(task.statutTache),
+          type: mapTypeTacheToType(task.typeTache),
+          startDate: task.dateDebut,
+          endDate: task.dateFin,
+          direction: task.directionAssociee,
+          placesCount: task.nombrePlaces,
+          isRemunerated: task.remuneree
+        }));
+        
+        setTasks(mappedTasks);
+      } catch (error) {
+        console.error('Erreur lors du chargement des tâches:', error);
+      }
+    };
+    fetchTasks();
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      try {
+        await api.delete(`/tasks/${taskId}`);
+        handleTaskUpdated();
+        setOpenMenuId(null);
+      } catch (error) {
+        console.error('Erreur lors de la suppression de la tâche:', error);
+        alert('Erreur lors de la suppression de la tâche');
+      }
+    }
+  };
+
+  const handleEditTask = async (taskId: string) => {
+    try {
+      const response = await api.get(`/tasks/${taskId}`);
+      const taskData = response.data.data || response.data;
+      setEditingTask(taskData);
+      setOpenMenuId(null);
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la tâche:', error);
+      alert('Erreur lors de la récupération de la tâche');
+    }
+  };
+
+  const handleAffectTask = (taskId: string) => {
+    setSelectedTaskForAffectation(taskId);
+    setShowAffectationModal(true);
+    setOpenMenuId(null);
+  };
+
+  const handleCloseAffectationModal = () => {
+    setShowAffectationModal(false);
+    setSelectedTaskForAffectation(null);
+  };
+
+  const handleShowTaskDetail = (taskId: string) => {
+    setSelectedTaskForDetail(taskId);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedTaskForDetail(null);
+  };
+
+  const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           task.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
@@ -126,14 +215,26 @@ export function Tasks() {
         onNewClick={() => setShowCreateModal(true)}
         newButtonText="Nouvelle tâche"
         resultsCount={filteredTasks.length}
-        getFilterCount={(value) => value === 'all' ? mockTasks.length : mockTasks.filter(t => t.status === value).length}
+        getFilterCount={(value) => value === 'all' ? tasks.length : tasks.filter(t => t.status === value).length}
       />
 
-      {/* Task List */}
-      {filteredTasks.length > 0 ? (
+      {/* Loading state */}
+      {loading ? (
+        <div className="empty-state-card">
+          <h3 className="empty-state-title">Chargement des tâches...</h3>
+        </div>
+      ) : (
+        <>
+          {/* Task List */}
+          {filteredTasks.length > 0 ? (
         <div className={`tasks-container ${viewMode}`}>
           {filteredTasks.map((task) => (
-            <div key={task.id} className="task-item-card">
+            <div 
+              key={task.id} 
+              className="task-item-card" 
+              onClick={() => handleShowTaskDetail(task.id)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="task-item-header">
                 <div className="task-item-title-section">
                   <h3 className="task-item-title">{task.name}</h3>
@@ -150,9 +251,51 @@ export function Tasks() {
                       Rémunérée
                     </span>
                   )}
-                  <button className="task-menu-button">
-                    <MoreHorizontal size={18} />
-                  </button>
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      className="task-menu-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === task.id ? null : task.id);
+                      }}
+                    >
+                      <MoreHorizontal size={18} />
+                    </button>
+                    {openMenuId === task.id && (
+                      <div className="user-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAffectTask(task.id);
+                          }}
+                        >
+                          <UserPlus size={14} style={{ marginRight: '8px' }} />
+                          Affecter
+                        </button>
+                        <button 
+                          className="menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditTask(task.id);
+                          }}
+                        >
+                          <Pencil size={14} style={{ marginRight: '8px' }} />
+                          Modifier
+                        </button>
+                        <button 
+                          className="menu-item delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTask(task.id);
+                          }}
+                        >
+                          <Trash2 size={14} style={{ marginRight: '8px' }} />
+                          Supprimer
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -188,8 +331,27 @@ export function Tasks() {
           </p>
         </div>
       )}
+        </>
+      )}
 
-      {showCreateModal && <TaskFormModal onClose={() => setShowCreateModal(false)} mode="create" />}
+      {showCreateModal && <TaskFormModal onClose={handleTaskUpdated} mode="create" />}
+      {editingTask && <TaskFormModal onClose={handleTaskUpdated} mode="edit" task={editingTask} />}
+      
+      {/* Modal d'affectation */}
+      {showAffectationModal && selectedTaskForAffectation && (
+        <AffectationModal 
+          taskId={selectedTaskForAffectation}
+          onClose={handleCloseAffectationModal}
+        />
+      )}
+      
+      {/* Modal de détails de la tâche */}
+      {showDetailModal && selectedTaskForDetail && (
+        <TaskDetailModal 
+          taskId={selectedTaskForDetail}
+          onClose={handleCloseDetailModal}
+        />
+      )}
     </div>
   );
 }

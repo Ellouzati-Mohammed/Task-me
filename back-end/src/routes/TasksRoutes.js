@@ -27,6 +27,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const newTask = new Task(req.body);
+    console.log(newTask)
+    console.log(req.body)
     await newTask.save();
     res.status(201).json({ success: true, data: newTask });
   } catch (error) {

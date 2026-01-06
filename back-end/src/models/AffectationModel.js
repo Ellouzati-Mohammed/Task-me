@@ -7,8 +7,7 @@ const affectationSchema = new Schema({
     justificatif: { type: String }, // obligatoire si refus ou annulation 
     tache: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true }, 
     auditeur: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
-    heuresEffectuees: { type: Number, default: 0 }, 
-    rapportAlgorithmique: { type: String }, // trace du choix IA ou semi-auto
+    //rapportAlgorithmique: { type: String }, // trace du choix IA ou semi-auto
     affectationOrigine: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment' }, 
     auditeurPropose: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
     dateAffectation: { type: Date, default: Date.now } },);                         

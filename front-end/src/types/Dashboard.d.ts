@@ -8,13 +8,13 @@ export interface StatCardProps {
 }
 export interface ActivityItem {
   id: string;
-  type: 'accepted' | 'refused' | 'delegated' | 'created' | 'assigned';
+  type: 'pending' | 'affectation' | 'affectee' | 'encours' | 'completed' | 'cancelled';
   user: string;
   task: string;
   time: string;
 }
-type TaskStatus = 'pending' | 'accepted' | 'refused' | 'delegated' | 'completed';
-type TaskType = 'formateur' | 'membre_jury' | 'beneficiaire_formation' | 'observateur' | 'concepteur_evaluation';
+export type TaskStatus = 'pending' | 'affectation' | 'affectee' | 'encours' | 'completed' | 'cancelled';
+export type TaskType = 'formateur' | 'membre_jury' | 'beneficiaire_formation' | 'observateur' | 'concepteur_evaluation';
 
 export interface Task {
   id: string;
@@ -31,10 +31,11 @@ export interface Task {
 
 export interface StatusConfig {
   pending: { label: string; className: string };
-  accepted: { label: string; className: string };
-  refused: { label: string; className: string };
-  delegated: { label: string; className: string };
+  affectation: { label: string; className: string };
+  affectee: { label: string; className: string };
+  encours: { label: string; className: string };
   completed: { label: string; className: string };
+  cancelled: { label: string; className: string };
 }
 export interface TypeLabels {
   formateur: string;

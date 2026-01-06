@@ -15,19 +15,19 @@ const taskSchema = new Schema({
     necessiteVehicule: { type: Boolean, default: false },
     vehicule: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicule" },
     directionAssociee: { type: String, enum: ["Rabat-Casa", "Meknès-Errachidia", "Marrakech-Agadir"] },
-    fichierJoint: {type:String, required:true},
+    fichierJoint: {type:String},
     nombrePlaces: {type:Number, default:1},
     statutTache: { 
       type: String, 
       enum: [
-        CREEE
-	      EN_AFFECTATION
-	      COMPLETEE_AFFECTEE
-	      EN_COURS
-	      TERMINEE
-	      ANNULEE
+        "CREEE",
+        "EN_AFFECTATION",
+        "COMPLETEE_AFFECTEE",
+        "EN_COURS",
+        "TERMINEE",
+        "ANNULEE"
       ], 
-      default: "Ouverte" 
+      default: "CREEE" 
     },
     dateCreation: { type: Date, default: Date.now },
     urgent: { type: Boolean, default: false },

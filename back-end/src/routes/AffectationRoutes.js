@@ -12,6 +12,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Récupérer les affectations d'une tâche spécifique
+router.get('/task/:taskId', async (req, res) => {
+  try {
+    const affectations = await Affectation.find({ tache: req.params.taskId }).populate('auditeur');
+    res.json({ success: true, data: affectations });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Erreur récupération affectations de la tâche' });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const newAffectation = new Affectation(req.body);

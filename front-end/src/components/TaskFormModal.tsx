@@ -13,6 +13,19 @@ const typeTacheOptions = [
   { value: 'Concepteur' as TypeTache, label: 'Concepteur' }
 ];
 
+const specialiteOptions = [
+  { value: 'Pédagogique', label: 'Pédagogique' },
+  { value: 'Orientation', label: 'Orientation' },
+  { value: 'Planification', label: 'Planification' },
+  { value: 'Services financiers', label: 'Services financiers' }
+];
+
+const gradeOptions = [
+  { value: 'A', label: 'Grade A' },
+  { value: 'B', label: 'Grade B' },
+  { value: 'C', label: 'Grade C' }
+];
+
 const directionOptions = [
   { value: 'Rabat-Casa' as DirectionAssociee, label: 'Rabat - Casablanca' },
   { value: 'Meknès-Errachidia' as DirectionAssociee, label: 'Meknès - Errachidia' },
@@ -23,22 +36,45 @@ const initialFormData: TaskFormData = {
   nom: '',
   description: '',
   typeTache: 'Formateur',
-  statutTache: 'Ouverte',
+  statutTache: 'CREEE',
   dateDebut: '',
   dateFin: '',
   dateCreation: new Date().toISOString().split('T')[0],
   remuneree: false,
   specialites: [],
   grades: [],
-  commune: false,
   necessiteVehicule: false,
-  fichierJoint: '',
+  directionAssociee: 'Rabat-Casa',
   nombrePlaces: 1,
   urgent: false
 };
 
 export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalProps) {
-  const [formData, setFormData] = useState<TaskFormData>(task || initialFormData);
+  // Initialiser les données du formulaire en mappant task si présent
+  const getInitialFormData = (): TaskFormData => {
+    if (task && mode === 'edit') {
+      return {
+        nom: task.nom || '',
+        description: task.description || '',
+        typeTache: task.typeTache || 'Formateur',
+        statutTache: task.statutTache || 'CREEE',
+        dateDebut: task.dateDebut ? task.dateDebut.split('T')[0] : '',
+        dateFin: task.dateFin ? task.dateFin.split('T')[0] : '',
+        dateCreation: task.dateCreation ? task.dateCreation.split('T')[0] : new Date().toISOString().split('T')[0],
+        remuneree: task.remuneree || false,
+        specialites: task.specialites || [],
+        grades: task.grades || [],
+        necessiteVehicule: task.necessiteVehicule || false,
+        vehiculeId: task.vehicule || '',
+        directionAssociee: task.directionAssociee || 'Rabat-Casa',
+        nombrePlaces: task.nombrePlaces || 1,
+        urgent: task.urgent || false
+      };
+    }
+    return initialFormData;
+  };
+
+  const [formData, setFormData] = useState<TaskFormData>(getInitialFormData());
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
 
@@ -80,11 +116,18 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
     e.preventDefault();
     
     try {
-      if (mode === 'edit' && task?.id) {
-        await api.put(`/tasks/${task.id}`, formData);
+      // Préparer les données à envoyer en mappant vehiculeId vers vehicule
+      const { vehiculeId, ...restData } = formData;
+      const dataToSend = {
+        ...restData,
+        vehicule: vehiculeId || null
+      };
+
+      if (mode === 'edit' && task?._id) {
+        await api.put(`/tasks/${task._id}`, dataToSend);
         console.log('Tâche mise à jour avec succès');
       } else {
-        await api.post('/tasks', formData);
+        await api.post('/tasks', dataToSend);
         console.log('Tâche créée avec succès');
       }
       onClose();
@@ -96,6 +139,24 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
 
   const handleCancel = () => {
     onClose();
+  };
+
+  const handleSpecialiteToggle = (specialite: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specialites: prev.specialites.includes(specialite)
+        ? prev.specialites.filter(s => s !== specialite)
+        : [...prev.specialites, specialite]
+    }));
+  };
+
+  const handleGradeToggle = (grade: string) => {
+    setFormData(prev => ({
+      ...prev,
+      grades: prev.grades.includes(grade)
+        ? prev.grades.filter(g => g !== grade)
+        : [...prev.grades, grade]
+    }));
   };
 
   return (
@@ -204,7 +265,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                       onChange={(e) => setFormData(prev => ({ 
                         ...prev, 
                         directionAssociee: e.target.value as DirectionAssociee,
-                        vehicule: '' // Reset vehicule quand on change de direction
+                        vehiculeId: '' // Reset vehicule quand on change de direction
                       }))}
                       disabled={!formData.necessiteVehicule}
                       required
@@ -226,8 +287,8 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                       ) : vehicles.length > 0 ? (
                         <select
                           className="form-select"
-                          value={formData.vehicule || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, vehicule: e.target.value }))}
+                          value={formData.vehiculeId || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, vehiculeId: e.target.value }))}
                         >
                           <option value="">Aucun véhicule sélectionné</option>
                           {vehicles.map(vehicle => (
@@ -285,31 +346,35 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
             </h2>
             
             <div className="criteria-group">
-              <label className="criteria-label">Spécialités requises (séparées par virgule)</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.specialites.join(', ')}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  specialites: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '')
-                }))}
-                placeholder="Ex: Pédagogique, Orientation"
-              />
+              <label className="criteria-label">Spécialités requises</label>
+              <div className="checkbox-group">
+                {specialiteOptions.map(option => (
+                  <label key={option.value} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.specialites.includes(option.value)}
+                      onChange={() => handleSpecialiteToggle(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="criteria-group">
-              <label className="criteria-label">Grades acceptés (séparés par virgule)</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.grades.join(', ')}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  grades: e.target.value.split(',').map(g => g.trim()).filter(g => g !== '')
-                }))}
-                placeholder="Ex: A, B, C"
-              />
+              <label className="criteria-label">Grades acceptés</label>
+              <div className="checkbox-group">
+                {gradeOptions.map(option => (
+                  <label key={option.value} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.grades.includes(option.value)}
+                      onChange={() => handleGradeToggle(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -345,18 +410,21 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
           <div className="form-section">
             <h2 className="section-title">
               <Upload size={18} />
-              Fichier joint *
+              Document joint (optionnel)
             </h2>
-            <div className="form-group">
-              <label className="form-label">Chemin du fichier</label>
+            <div className="file-upload">
               <input
-                type="text"
-                className="form-input"
-                value={formData.fichierJoint}
-                onChange={(e) => setFormData(prev => ({ ...prev, fichierJoint: e.target.value }))}
-                placeholder="Ex: /uploads/task-document.pdf"
-                required
+                type="file"
+                id="file-input"
+                className="file-input"
+                accept=".pdf"
+                onChange={(e) => setFormData(prev => ({ ...prev, fichierJoint: e.target.files?.[0] }))}
               />
+              <label htmlFor="file-input" className="file-label">
+                <Upload size={20} />
+                <span>Cliquez pour télécharger un fichier PDF</span>
+              </label>
+              <p className="file-hint">Format accepté: PDF uniquement</p>
             </div>
           </div>
         </form>

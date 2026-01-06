@@ -17,11 +17,10 @@ const userSchema = new Schema({
     dateembauche:{ type: Date }
 });
 
+
 /*
-// 🔐 hash avant sauvegarde
 userSchema.pre('save', passwordHash);
 
-// 🔎 comparer mots de passe
 userSchema.methods.comparePassword = function (password) {
   return bcrypt.compare(password, this.motdePasse);
 };
