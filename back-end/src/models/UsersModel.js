@@ -8,12 +8,12 @@ const userSchema = new Schema({
     prenom: { type: String, required: true }, 
     email: { type: String, required: true, unique: true },
     motdePasse: { type: String, required: true },   
-    grade: { type: String, enum: ["A", "B", "C"] }, 
-    specialite: { type: String, enum:['pédagogique', 'orientation', 'planification', 'financier'] , required:true}, 
+    grade: { type: String, enum: ['',"A", "B", "C"] }, 
+    specialite: { type: String, enum:['','pedagogique', 'orientation', 'planification', 'financier'] }, 
     formation: { type: String }, 
     diplomes: { type: String }, 
-    actif: { type: Boolean, default: false }, 
-    role: { type: String, enum: ["admin", "coordinateur", "auteur", "user"], default: "user" } , 
+    actif: { type: Boolean, default: true }, 
+    role: { type: String, enum: ["admin", "coordinateur", "auditeur"], default: "auditeur" } , 
     dateembauche:{ type: Date }
 });
 

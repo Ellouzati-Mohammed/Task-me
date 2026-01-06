@@ -1,12 +1,8 @@
-export type TypeTache = 'formateur' | 'membre_jury' | 'beneficiaire_formation' | 'observateur' | 'concepteur_evaluation';
+export type TypeTache = 'Formateur' | 'Membre de Jury' | 'Bénéficiaire de formation' | 'Observateur' | 'Concepteur';
 
-export type StatutTache = 'creee' | 'en_affectation' | 'completee_affectee' | 'en_cours' | 'terminee' | 'annulee';
+export type StatutTache = 'Ouverte' | 'Acceptée' | 'Refusée' | 'Déléguée' | 'En cours' | 'Terminée' | 'Annulée';
 
-export type Specialite = 'pedagogique' | 'orientation' | 'planification' | 'services_financiers';
-
-export type Grade = 'A' | 'B' | 'C';
-
-export type DirectionAssociee = 'rabat_casa' | 'meknes_errachidia' | 'marrakech_agadir';
+export type DirectionAssociee = 'Rabat-Casa' | 'Meknès-Errachidia' | 'Marrakech-Agadir';
 
 export interface TaskFormData {
   nom: string;
@@ -17,14 +13,17 @@ export interface TaskFormData {
   dateFin: string;
   dateCreation: string;
   remuneree: boolean;
-  specialites: Specialite[];
-  grades: Grade[];
+  specialites: string[];
+  grades: string[];
+  commune: boolean;
   necessiteVehicule: boolean;
-  vehiculeId?: string;
-  directionAssociee: DirectionAssociee;
-  fichierJoint?: File;
+  vehicule?: string;
+  directionAssociee?: DirectionAssociee;
+  fichierJoint: string;
   nombrePlaces: number;
   urgent: boolean;
+  coordinateur?: string;
+  conversation?: string;
 }
 
 export interface TaskFormModalProps {

@@ -5,7 +5,15 @@ const User = require('../models/UsersModel');
 // Créer un utilisateur
 router.post('/', async (req, res) => {
   try {
-    const user = new User(req.body);
+    // Mapper dateInscription vers dateembauche si présent
+    const userData = { ...req.body };
+    if (userData.dateInscription) {
+      userData.dateembauche = userData.dateInscription;
+      delete userData.dateInscription;
+    }
+    
+    const user = new User(userData);
+    console.log(user);
     await user.save();
     res.status(201).json({ success: true, data: user });
   } catch (error) {
@@ -52,6 +60,7 @@ router.delete('/:id', async (req, res) => {
     if (!deletedUser) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
     res.json({ success: true, message: 'Utilisateur supprimé' });
   } catch (error) {
+    console.err(error);
     res.status(500).json({ success: false, message: 'Erreur suppression utilisateur' });
   }
 });

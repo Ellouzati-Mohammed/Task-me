@@ -1,100 +1,85 @@
 import { 
   Car,
   MapPin,
-  Users,
   MoreHorizontal,
   Filter,
-  CheckCircle,
-  AlertCircle
+  Pencil,
+  Trash2
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { VehicleFormModal } from '../components/VehicleFormModal';
 import '../Styles/Vehicles.css';
-import type { Vehicle, VehicleStatus } from "../types/Vehicle.d";
+import type { Vehicle } from "../types/Vehicle.d";
+import api from '../services/api';
 
-const statusConfig = {
-  disponible: { label: 'Disponible', className: 'available' },
-  en_service: { label: 'En service', className: 'in-service' },
-  maintenance: { label: 'Maintenance', className: 'maintenance' },
-};
-
-const statusFilters = [
+const directionFilters = [
   { value: 'all' as const, label: 'Tous' },
-  { value: 'disponible' as const, label: 'Disponibles' },
-  { value: 'en_service' as const, label: 'En service' },
-];
-
-const mockVehicles: Vehicle[] = [
-  {
-    id: '1',
-    name: 'Dacia Logan',
-    model: 'Logan',
-    registration: '12345-A-1',
-    status: 'disponible',
-    location: 'Rabat'
-  },
-  {
-    id: '2',
-    name: 'Renault Clio',
-    model: 'Clio',
-    registration: '67890-B-2',
-    status: 'en_service',
-    location: 'Meknès',
-    assignedTo: 2
-  },
-  {
-    id: '3',
-    name: 'Peugeot 208',
-    model: '208',
-    registration: '11111-C-3',
-    status: 'disponible',
-    location: 'Marrakech'
-  },
-  {
-    id: '4',
-    name: 'Volkswagen Polo',
-    model: 'Polo',
-    registration: '22222-D-4',
-    status: 'disponible',
-    location: 'Casablanca'
-  },
-  {
-    id: '5',
-    name: 'Fiat 500',
-    model: '500',
-    registration: '33333-E-5',
-    status: 'en_service',
-    location: 'Rabat',
-    assignedTo: 1
-  },
-  {
-    id: '6',
-    name: 'Citroën C3',
-    model: 'C3',
-    registration: '44444-F-6',
-    status: 'disponible',
-    location: 'Meknès'
-  }
+  { value: 'Rabat-Casa' as const, label: 'Rabat-Casa' },
+  { value: 'Meknès-Errachidia' as const, label: 'Meknès-Errachidia' },
+  { value: 'Marrakech-Agadir' as const, label: 'Marrakech-Agadir' },
 ];
 
 export function Vehicles() {
-  const [statusFilter, setStatusFilter] = useState<'all' | VehicleStatus>('all');
+  const [directionFilter, setDirectionFilter] = useState<'all' | string>('all');
   const [viewMode] = useState<'list' | 'grid'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const filteredVehicles = mockVehicles.filter(vehicle => {
-    const matchesSearch = vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          vehicle.registration.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          vehicle.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || vehicle.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/vehicles');
+      setVehicles(response.data.data || response.data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des véhicules:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteVehicle = async (vehicleId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
+      try {
+        await api.delete(`/vehicles/${vehicleId}`);
+        fetchVehicles();
+      } catch (error) {
+        console.error('Erreur lors de la suppression du véhicule:', error);
+        alert('Erreur lors de la suppression du véhicule');
+      }
+    }
+  };
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setOpenMenuId(null);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setEditingVehicle(null);
+    fetchVehicles();
+  };
+
+  const filteredVehicles = vehicles.filter(vehicle => {
+    const matchesSearch = vehicle.immatriculation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (vehicle.marque?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                          (vehicle.modele?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+    const matchesDirection = directionFilter === 'all' || vehicle.direction === directionFilter;
+    return matchesSearch && matchesDirection;
   });
 
-  const getTotalVehicles = () => mockVehicles.length;
-  const getAvailableVehicles = () => mockVehicles.filter(v => v.status === 'disponible').length;
-  const getInServiceVehicles = () => mockVehicles.filter(v => v.status === 'en_service').length;
+  const getTotalVehicles = () => vehicles.length;
+  const getVehiclesByDirection = (direction: string) => 
+    vehicles.filter(v => v.direction === direction).length;
 
   return (
     <div className="vehicles-page">
@@ -111,20 +96,29 @@ export function Vehicles() {
         </div>
         <div className="vehicle-stat-card">
           <div className="stat-content">
-            <p className="stat-label">Disponibles</p>
-            <p className="stat-value green">{getAvailableVehicles()}</p>
+            <p className="stat-label">Rabat-Casa</p>
+            <p className="stat-value green">{getVehiclesByDirection('Rabat-Casa')}</p>
           </div>
           <div className="stat-icon green">
-            <CheckCircle size={20} />
+            <MapPin size={20} />
           </div>
         </div>
         <div className="vehicle-stat-card">
           <div className="stat-content">
-            <p className="stat-label">En service</p>
-            <p className="stat-value orange">{getInServiceVehicles()}</p>
+            <p className="stat-label">Meknès-Errachidia</p>
+            <p className="stat-value orange">{getVehiclesByDirection('Meknès-Errachidia')}</p>
           </div>
           <div className="stat-icon orange">
-            <AlertCircle size={20} />
+            <MapPin size={20} />
+          </div>
+        </div>
+        <div className="vehicle-stat-card">
+          <div className="stat-content">
+            <p className="stat-label">Marrakech-Agadir</p>
+            <p className="stat-value blue">{getVehiclesByDirection('Marrakech-Agadir')}</p>
+          </div>
+          <div className="stat-icon blue">
+            <MapPin size={20} />
           </div>
         </div>
       </div>
@@ -134,53 +128,73 @@ export function Vehicles() {
         subtitle="Gérez la flotte de véhicules"
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        filters={statusFilters}
-        activeFilter={statusFilter}
-        onFilterChange={(value) => setStatusFilter(value as 'all' | VehicleStatus)}
+        filters={directionFilters}
+        activeFilter={directionFilter}
+        onFilterChange={(value) => setDirectionFilter(value)}
         onNewClick={() => setShowCreateModal(true)}
         newButtonText="Ajouter un véhicule"
         resultsCount={filteredVehicles.length}
-        getFilterCount={(value) => value === 'all' ? mockVehicles.length : mockVehicles.filter(v => v.status === value).length}
+        getFilterCount={(value) => value === 'all' ? vehicles.length : getVehiclesByDirection(value)}
       />
 
       {/* Vehicle List */}
-      {filteredVehicles.length > 0 ? (
+      {loading ? (
+        <div className="empty-state-card">
+          <p className="empty-state-text">Chargement des véhicules...</p>
+        </div>
+      ) : filteredVehicles.length > 0 ? (
         <div className={`vehicles-container ${viewMode}`}>
           {filteredVehicles.map((vehicle) => (
-            <div key={vehicle.id} className="vehicle-card">
+            <div key={vehicle._id} className="vehicle-card">
               <div className="vehicle-card-header">
                 <div className="vehicle-icon-section">
-                  <div className={`vehicle-icon ${statusConfig[vehicle.status].className}`}>
+                  <div className="vehicle-icon">
                     <Car size={20} />
                   </div>
                   <div className="vehicle-info-section">
-                    <h3 className="vehicle-name">{vehicle.name}</h3>
-                    <p className="vehicle-registration">{vehicle.registration}</p>
+                    <h3 className="vehicle-name">{vehicle.marque || 'N/A'} {vehicle.modele || ''}</h3>
+                    <p className="vehicle-registration">{vehicle.immatriculation}</p>
                   </div>
                 </div>
-                <button className="vehicle-menu-button">
-                  <MoreHorizontal size={16} />
-                </button>
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    className="vehicle-menu-button"
+                    onClick={() => setOpenMenuId(openMenuId === vehicle._id ? null : vehicle._id)}
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                  {openMenuId === vehicle._id && (
+                    <div className="user-menu-dropdown">
+                      <button 
+                        className="menu-item"
+                        onClick={() => handleEditVehicle(vehicle)}
+                      >
+                        <Pencil size={14} style={{ marginRight: '8px' }} />
+                        Modifier
+                      </button>
+                      <button 
+                        className="menu-item delete"
+                        onClick={() => handleDeleteVehicle(vehicle._id)}
+                      >
+                        <Trash2 size={14} style={{ marginRight: '8px' }} />
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="vehicle-card-body">
-                <span className={`vehicle-status-badge ${statusConfig[vehicle.status].className}`}>
-                  {statusConfig[vehicle.status].label}
-                </span>
+                {vehicle.direction && (
+                  <span className="vehicle-status-badge">
+                    {vehicle.direction}
+                  </span>
+                )}
                 <div className="vehicle-location">
                   <MapPin size={14} />
-                  <span>{vehicle.location}</span>
+                  <span>{vehicle.direction || 'Non défini'}</span>
                 </div>
               </div>
-
-              {vehicle.assignedTo && (
-                <div className="vehicle-card-footer">
-                  <Users size={14} />
-                  <span className="assignment-text">
-                    Assigné à {vehicle.assignedTo} auditeur{vehicle.assignedTo > 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -196,7 +210,20 @@ export function Vehicles() {
         </div>
       )}
 
-      {showCreateModal && <VehicleFormModal onClose={() => setShowCreateModal(false)} mode="create" />}
+      {showCreateModal && (
+        <VehicleFormModal 
+          onClose={handleCloseModal} 
+          mode="create" 
+        />
+      )}
+      
+      {editingVehicle && (
+        <VehicleFormModal 
+          onClose={handleCloseModal} 
+          vehicle={editingVehicle}
+          mode="edit" 
+        />
+      )}
     </div>
   );
 }

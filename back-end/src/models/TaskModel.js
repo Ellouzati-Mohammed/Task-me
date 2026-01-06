@@ -20,13 +20,12 @@ const taskSchema = new Schema({
     statutTache: { 
       type: String, 
       enum: [
-        "Ouverte",       // tâche créée, en attente de réponse.
-        "Acceptée",      // auditeur accepte
-        "Refusée",       // auditeur refuse avec justification
-        "Déléguée",      // auditeur propose un autre
-        "En cours",      // tâche en exécution
-        "Terminée",      // tâche achevée
-        "Annulée"        // annulée par coordinateur ou autre
+        CREEE
+	      EN_AFFECTATION
+	      COMPLETEE_AFFECTEE
+	      EN_COURS
+	      TERMINEE
+	      ANNULEE
       ], 
       default: "Ouverte" 
     },

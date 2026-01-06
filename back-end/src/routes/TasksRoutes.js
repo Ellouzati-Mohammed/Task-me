@@ -30,6 +30,7 @@ router.post('/', async (req, res) => {
     await newTask.save();
     res.status(201).json({ success: true, data: newTask });
   } catch (error) {
+    console.log(error)
     res.status(500).json({ success: false, message: 'Erreur lors de la création de la tâche' });
   }
 });

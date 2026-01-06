@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Save, X, Upload, User, Briefcase } from 'lucide-react';
+import { Save, X, Upload, User as UserIcon, Briefcase } from 'lucide-react';
 import '../Styles/UserFormModal.css';
 import type { UserFormData, UserGrade, Specialite, UserFormModalProps } from '../types/UserForm.d';
+import type { User } from '../types/User.d';
+import api from '../services/api';
 
 const gradeOptions = [
   { value: 'A' as UserGrade, label: 'Grade A' },
@@ -20,11 +22,11 @@ const initialFormData: UserFormData = {
   nom: '',
   prenom: '',
   email: '',
-  motDePasse: '',
+  motdePasse: '',
   role: 'auditeur',
-  grade: 'A',
-  specialite: 'pedagogique',
-  diplomes: [],
+  grade: '',
+  specialite: '',
+  diplomes: '',
   formations: [],
   actif: true,
   dateInscription: new Date().toISOString().split('T')[0]
@@ -32,7 +34,23 @@ const initialFormData: UserFormData = {
 
 export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalProps) {
   const [userType, setUserType] = useState<'coordinateur' | 'auditeur'>(user?.role === 'coordinateur' ? 'coordinateur' : 'auditeur');
-  const [formData, setFormData] = useState<UserFormData>(user || { ...initialFormData, role: userType });
+  
+  // Transformer les données de l'utilisateur pour le formulaire
+  const initialData: UserFormData = user ? {
+    nom: user.nom,
+    prenom: user.prenom,
+    email: user.email,
+    motdePasse: user.motdePasse || '',
+    role: user.role,
+    grade: (user.grade || '') as UserGrade,
+    specialite: user.specialite || '',
+    diplomes: user.diplomes || '',
+    formations: [],
+    actif: user.actif,
+    dateInscription: user.dateembauche ? new Date(user.dateembauche).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  } : { ...initialFormData, role: userType };
+  
+  const [formData, setFormData] = useState<UserFormData>(initialData);
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {
@@ -42,10 +60,56 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
     };
   }, []);
 
+
+   const addUser = async () =>{
+    try {
+        const res = await api.post("/users/", formData);
+        console.log(res);
+    } catch (err) {
+        console.error(err);
+    }
+   };
+
+   const updateUser = async () => {
+    try {
+        // Préparer les données pour le backend
+        const dataToSend: Partial<User> = {
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          role: formData.role,
+          actif: formData.actif,
+          dateembauche: formData.dateInscription
+        };
+
+        // Ajouter le mot de passe seulement s'il est modifié
+        if (formData.motdePasse) {
+          dataToSend.motdePasse = formData.motdePasse;
+        }
+
+        // Ajouter les champs spécifiques aux auditeurs
+        if (formData.role === 'auditeur') {
+          dataToSend.grade = formData.grade !== '' ? formData.grade : undefined;
+          dataToSend.specialite = formData.specialite;
+          dataToSend.diplomes = formData.diplomes || '';
+          dataToSend.formation = Array.isArray(formData.formations) ? formData.formations.join(', ') : formData.formations || '';
+        }
+
+        const res = await api.put(`/users/${user?._id}`, dataToSend);
+        console.log(res);
+    } catch (err) {
+        console.error(err);
+    }
+   };
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(mode === 'edit' ? 'Updating user:' : 'Creating user:', formData);
-    // TODO: API call to create/update user
+    if (mode === 'create') {
+      addUser();
+    } else {
+      updateUser();
+    }
     onClose();
   };
 
@@ -84,7 +148,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
           {mode === 'create' && (
             <div className="form-section">
               <h2 className="section-title">
-                <User size={18} />
+                <UserIcon size={18} />
                 Type d'utilisateur
               </h2>
               <div className="user-type-selector">
@@ -123,7 +187,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
           {/* Informations personnelles */}
           <div className="form-section">
             <h2 className="section-title">
-              <User size={18} />
+              <UserIcon size={18} />
               Informations personnelles
             </h2>
             <div className="form-grid">
@@ -169,8 +233,8 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                   <input
                     type="password"
                     className="form-input"
-                    value={formData.motDePasse}
-                    onChange={(e) => setFormData(prev => ({ ...prev, motDePasse: e.target.value }))}
+                    value={formData.motdePasse}
+                    onChange={(e) => setFormData(prev => ({ ...prev, motdePasse: e.target.value }))}
                     placeholder="Mot de passe"
                     required={mode === 'create'}
                   />

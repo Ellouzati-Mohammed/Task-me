@@ -1,7 +1,7 @@
 // importer les packages
 const express = require('express');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const connectDB = require('./src/config/db');
 
 dotenv.config();
 
@@ -11,6 +11,13 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
+
+const cors = require("cors");
+app.use(cors({
+  origin: "http://localhost:5173", // autorise le frontend
+  credentials: true
+}));
+
 
 // importation des routes
 const authRoutes = require('./src/routes/AuthRoutes'); 
@@ -41,16 +48,11 @@ app.get('/', (req, res) => {
 });
 
 // connexion à la base de données et démarrage serveur
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('Connexion à MongoDB établie.');
-    app.listen(port, () => {
-      console.log(`Serveur démarré sur le port ${port}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Connexion à MongoDB échouée.', error);
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`Serveur démarré sur le port ${port}`);
   });
+});
 
 module.exports = app;
 

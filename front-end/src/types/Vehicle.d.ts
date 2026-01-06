@@ -1,18 +1,9 @@
-export type VehicleStatus = 'disponible' | 'en_service' | 'maintenance';
+export type Direction = 'Rabat-Casa' | 'Meknès-Errachidia' | 'Marrakech-Agadir';
 
 export interface Vehicle {
-  id: string;
-  name: string;
-  model: string;
-  registration: string;
-  status: VehicleStatus;
-  location: string;
-  assignedTo?: number; // nombre d'auditeurs assignés
-}
-
-export interface VehicleStatusConfig {
-  [key: string]: {
-    label: string;
-    className: string;
-  };
+  _id: string;
+  immatriculation: string;
+  marque?: string;
+  modele?: string;
+  direction?: Direction;
 }

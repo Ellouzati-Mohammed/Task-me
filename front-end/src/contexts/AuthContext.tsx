@@ -36,7 +36,7 @@ const mockUser: AuthUser = {
   nom: 'Alami',
   prenom: 'Mohammed',
   email: 'mohammed.alami@taskme.ma',
-  role: 'auditeur'
+  role: 'admin'
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {

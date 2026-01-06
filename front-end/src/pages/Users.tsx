@@ -6,95 +6,23 @@ import {
   MoreHorizontal,
   Filter
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { UserFormModal } from '../components/UserFormModal';
 import '../Styles/Users.css';
 import type { User, UserStatus } from "../types/User.d";
+import api from '../services/api';
 
 const roleConfig = {
-  superadmin: { label: 'Super Admin', color: '#8b5cf6' },
   admin: { label: 'Admin', color: '#3b82f6' },
   coordinateur: { label: 'Coordinateur', color: '#14b8a6' },
   auditeur: { label: 'Auditeur', color: '#f59e0b' },
-  planification: { label: 'Planification', color: '#ec4899' },
-  formateur: { label: 'Formateur', color: '#10b981' },
 };
 
 const statusFilters = [
   { value: 'all' as const, label: 'Tous' },
   { value: 'active' as const, label: 'Actifs' },
   { value: 'inactive' as const, label: 'Inactifs' },
-  { value: 'suspended' as const, label: 'Suspendus' },
-];
-
-const mockUsers: User[] = [
-  {
-    id: '1',
-    firstName: 'Ahmed',
-    lastName: 'Benali',
-    email: 'ahmed.benali@taskme.ma',
-    role: 'coordinateur',
-    department: 'Pédagogique',
-    grade: 'A',
-    hireDate: '2020-01-15',
-    status: 'active'
-  },
-  {
-    id: '2',
-    firstName: 'Fatima',
-    lastName: 'Zahra',
-    email: 'fatima.zahra@taskme.ma',
-    role: 'auditeur',
-    department: 'Orientation',
-    grade: 'B',
-    hireDate: '2021-03-20',
-    status: 'active'
-  },
-  {
-    id: '3',
-    firstName: 'Youssef',
-    lastName: 'Bennani',
-    email: 'youssef.bennani@taskme.ma',
-    role: 'planification',
-    department: 'Planification',
-    grade: 'A',
-    hireDate: '2019-09-10',
-    status: 'active'
-  },
-  {
-    id: '4',
-    firstName: 'Sara',
-    lastName: 'Idrissi',
-    email: 'sara.idrissi@taskme.ma',
-    role: 'formateur',
-    department: 'Formation',
-    grade: 'B',
-    hireDate: '2022-01-05',
-    status: 'active'
-  },
-  {
-    id: '5',
-    firstName: 'Mohammed',
-    lastName: 'Alami',
-    email: 'mohammed.alami@taskme.ma',
-    role: 'admin',
-    department: 'Administration',
-    grade: 'A',
-    hireDate: '2018-06-01',
-    status: 'active'
-  },
-  {
-    id: '6',
-    firstName: 'Amina',
-    lastName: 'Chakir',
-    email: 'amina.chakir@taskme.ma',
-    role: 'auditeur',
-    department: 'Qualité',
-    grade: 'A',
-    hireDate: '2020-11-15',
-    status: 'inactive'
-  }
 ];
 
 export function Users() {
@@ -102,13 +30,63 @@ export function Users() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
+  const [editMode, setEditMode] = useState(false);
 
-  const filteredUsers = mockUsers.filter(user => {
-    const matchesSearch = user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const [users,setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const fetchUsers = async () => {
+      try {
+        const res = await api.get("/users/"); 
+        setUsers(res.data.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+     
+    };
+ useEffect(()=>{
+  
+     fetchUsers()
+ },[]);
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+      try {
+        await api.delete(`/users/${userId}`);
+        setUsers(users.filter(u => u._id !== userId));
+        setActiveMenuUserId(null);
+      } catch (err) {
+        console.error('Erreur lors de la suppression:', err);
+        alert('Erreur lors de la suppression de l\'utilisateur');
+      }
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditMode(true);
+    setActiveMenuUserId(null);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setEditMode(false);
+    setSelectedUser(undefined);
+  
+    fetchUsers();
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.prenom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          user.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.department.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+                          user.specialite.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'active' && user.actif) ||
+                         (statusFilter === 'inactive' && !user.actif);
     return matchesSearch && matchesStatus;
   });
 
@@ -138,30 +116,65 @@ export function Users() {
         onNewClick={() => setShowCreateModal(true)}
         newButtonText="Nouvel utilisateur"
         resultsCount={filteredUsers.length}
-        getFilterCount={(value) => value === 'all' ? mockUsers.length : mockUsers.filter(u => u.status === value).length}
+        getFilterCount={(value) => {
+          if (value === 'all') return users.length;
+          if (value === 'active') return users.filter(u => u.actif).length;
+          if (value === 'inactive') return users.filter(u => !u.actif).length;
+          return 0;
+        }}
       />
 
+      {/* Loading State */}
+      {loading && (
+        <div className="users-loading">
+          <p>Chargement des utilisateurs...</p>
+        </div>
+      )}
+
       {/* User List */}
-      {filteredUsers.length > 0 ? (
+      {!loading && filteredUsers.length > 0 ? (
         <div className={`users-container ${viewMode}`}>
           {filteredUsers.map((user) => (
-            <div key={user.id} className="user-card">
+            <div key={user._id} className="user-card">
               <div className="user-card-header">
                 <div className="user-avatar-section">
                   <div 
                     className="user-avatar"
-                    style={{ backgroundColor: roleConfig[user.role].color }}
+                    style={{ backgroundColor: roleConfig[user.role]?.color || '#9ca3af' }}
                   >
-                    {getInitials(user.firstName, user.lastName)}
+                    {getInitials(user.prenom, user.nom)}
                   </div>
                   <div className="user-name-section">
-                    <h3 className="user-name">{user.firstName} {user.lastName}</h3>
-                    <span className="user-grade">Grade {user.grade}</span>
+                    <h3 className="user-name">{user.prenom} {user.nom}</h3>
+                    {user.role !== 'admin' && user.role !== 'coordinateur' && (
+                      <span className="user-grade">Grade {user.grade}</span>
+                    )}
                   </div>
                 </div>
-                <button className="user-menu-button">
-                  <MoreHorizontal size={16} />
-                </button>
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    className="user-menu-button"
+                    onClick={() => setActiveMenuUserId(activeMenuUserId === user._id ? null : user._id)}
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                  {activeMenuUserId === user._id && (
+                    <div className="user-menu-dropdown">
+                      <button 
+                        className="menu-item"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        Modifier
+                      </button>
+                      <button 
+                        className="menu-item delete"
+                        onClick={() => handleDeleteUser(user._id)}
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="user-card-body">
@@ -171,21 +184,23 @@ export function Users() {
                 </div>
                 <div className="user-info-item">
                   <Briefcase size={14} className="user-info-icon" />
-                  <span className="user-info-text">{roleConfig[user.role].label}</span>
+                  <span className="user-info-text">{roleConfig[user.role]?.label || user.role}</span>
                 </div>
-                <div className="user-info-item">
-                  <GraduationCap size={14} className="user-info-icon" />
-                  <span className="user-info-text">{user.department}</span>
-                </div>
+                {user.role !== 'admin' && user.role !== 'coordinateur' && (
+                  <div className="user-info-item">
+                    <GraduationCap size={14} className="user-info-icon" />
+                    <span className="user-info-text">{user.specialite}</span>
+                  </div>
+                )}
               </div>
 
               <div className="user-card-footer">
                 <div className="user-footer-item">
-                  <span className="user-footer-label">{getYearsOfService(user.hireDate)} ans d'ancienneté</span>
+                  <span className="user-footer-label">{getYearsOfService(user.dateembauche)} ans d'ancienneté</span>
                 </div>
                 <div className="user-footer-item">
                   <Calendar size={14} />
-                  <span className="user-footer-text">Depuis {new Date(user.hireDate).getFullYear()}</span>
+                  <span className="user-footer-text">Depuis {new Date(user.dateembauche).getFullYear()}</span>
                 </div>
               </div>
             </div>
@@ -203,7 +218,8 @@ export function Users() {
         </div>
       )}
 
-      {showCreateModal && <UserFormModal onClose={() => setShowCreateModal(false)} mode="create" />}
+      {showCreateModal && <UserFormModal onClose={handleCloseModal} mode="create" />}
+      {editMode && <UserFormModal onClose={handleCloseModal} mode="edit" user={selectedUser} />}
     </div>
   );
 }

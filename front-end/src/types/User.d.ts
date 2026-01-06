@@ -1,18 +1,20 @@
-export type UserRole = 'superadmin' | 'admin' | 'coordinateur' | 'auditeur' | 'planification' | 'formateur';
+export type UserRole =  'admin' | 'coordinateur' | 'auditeur';
 export type UserGrade = 'A' | 'B' | 'C';
-export type UserStatus = 'active' | 'inactive' | 'suspended';
+export type UserStatus = 'active' | 'inactive';
 
 export interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
+  _id: string;
+  nom: string;
+  prenom: string;
   email: string;
+  motdePasse: string;
   role: UserRole;
-  department: string;
-  grade: UserGrade;
-  hireDate: string;
-  status: UserStatus;
-  avatar?: string;
+  specialite: string;
+  grade?: UserGrade;
+  dateembauche: string;
+  actif: boolean;
+  diplomes?: string;
+  formation?: string;
 }
 
 export interface RoleConfig {

@@ -1,11 +1,10 @@
 const mongoose = require("mongoose");
 
-const MONGO_URI= "lien dial mongodb"
 
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB connecté");
   } catch (error) {
     console.error("Erreur connexion MongoDB :", error.message);

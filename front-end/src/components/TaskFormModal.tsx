@@ -1,54 +1,46 @@
 import { useState, useEffect } from 'react';
 import { Save, X, Upload, Calendar, Users, MapPin, FileText } from 'lucide-react';
 import '../Styles/TaskFormModal.css';
-import type { TaskFormData, TypeTache, Specialite, Grade, DirectionAssociee, TaskFormModalProps } from '../types/TaskForm.d';
+import type { TaskFormData, TypeTache, DirectionAssociee, TaskFormModalProps } from '../types/TaskForm.d';
+import type { Vehicle } from '../types/Vehicle.d';
+import api from '../services/api';
 
 const typeTacheOptions = [
-  { value: 'formateur' as TypeTache, label: 'Formateur' },
-  { value: 'membre_jury' as TypeTache, label: 'Membre de jury' },
-  { value: 'beneficiaire_formation' as TypeTache, label: 'Bénéficiaire de formation' },
-  { value: 'observateur' as TypeTache, label: 'Observateur' },
-  { value: 'concepteur_evaluation' as TypeTache, label: 'Concepteur d\'évaluation' }
-];
-
-const specialiteOptions = [
-  { value: 'pedagogique' as Specialite, label: 'Pédagogique' },
-  { value: 'orientation' as Specialite, label: 'Orientation' },
-  { value: 'planification' as Specialite, label: 'Planification' },
-  { value: 'services_financiers' as Specialite, label: 'Services financiers' }
-];
-
-const gradeOptions = [
-  { value: 'A' as Grade, label: 'Grade A' },
-  { value: 'B' as Grade, label: 'Grade B' },
-  { value: 'C' as Grade, label: 'Grade C' }
+  { value: 'Formateur' as TypeTache, label: 'Formateur' },
+  { value: 'Membre de Jury' as TypeTache, label: 'Membre de jury' },
+  { value: 'Bénéficiaire de formation' as TypeTache, label: 'Bénéficiaire de formation' },
+  { value: 'Observateur' as TypeTache, label: 'Observateur' },
+  { value: 'Concepteur' as TypeTache, label: 'Concepteur' }
 ];
 
 const directionOptions = [
-  { value: 'rabat_casa' as DirectionAssociee, label: 'Rabat - Casablanca' },
-  { value: 'meknes_errachidia' as DirectionAssociee, label: 'Meknès - Errachidia' },
-  { value: 'marrakech_agadir' as DirectionAssociee, label: 'Marrakech - Agadir' }
+  { value: 'Rabat-Casa' as DirectionAssociee, label: 'Rabat - Casablanca' },
+  { value: 'Meknès-Errachidia' as DirectionAssociee, label: 'Meknès - Errachidia' },
+  { value: 'Marrakech-Agadir' as DirectionAssociee, label: 'Marrakech - Agadir' }
 ];
 
 const initialFormData: TaskFormData = {
   nom: '',
   description: '',
-  typeTache: 'formateur',
-  statutTache: 'creee',
+  typeTache: 'Formateur',
+  statutTache: 'Ouverte',
   dateDebut: '',
   dateFin: '',
   dateCreation: new Date().toISOString().split('T')[0],
   remuneree: false,
   specialites: [],
   grades: [],
+  commune: false,
   necessiteVehicule: false,
-  directionAssociee: 'rabat_casa',
+  fichierJoint: '',
   nombrePlaces: 1,
   urgent: false
 };
 
 export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalProps) {
   const [formData, setFormData] = useState<TaskFormData>(task || initialFormData);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {
@@ -58,33 +50,52 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Charger les véhicules quand la direction change
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      if (formData.necessiteVehicule && formData.directionAssociee) {
+        try {
+          setLoadingVehicles(true);
+          const response = await api.get('/vehicles');
+          const allVehicles = response.data.data || response.data;
+          // Filtrer les véhicules par direction
+          const filteredVehicles = allVehicles.filter(
+            (v: Vehicle) => v.direction === formData.directionAssociee
+          );
+          setVehicles(filteredVehicles);
+        } catch (error) {
+          console.error('Erreur lors de la récupération des véhicules:', error);
+        } finally {
+          setLoadingVehicles(false);
+        }
+      } else {
+        setVehicles([]);
+      }
+    };
+
+    fetchVehicles();
+  }, [formData.necessiteVehicule, formData.directionAssociee]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(mode === 'edit' ? 'Updating task:' : 'Creating task:', formData);
-    // TODO: API call to create/update task
-    onClose();
+    
+    try {
+      if (mode === 'edit' && task?.id) {
+        await api.put(`/tasks/${task.id}`, formData);
+        console.log('Tâche mise à jour avec succès');
+      } else {
+        await api.post('/tasks', formData);
+        console.log('Tâche créée avec succès');
+      }
+      onClose();
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement de la tâche:', error);
+      alert('Erreur lors de l\'enregistrement de la tâche');
+    }
   };
 
   const handleCancel = () => {
     onClose();
-  };
-
-  const handleSpecialiteToggle = (specialite: Specialite) => {
-    setFormData(prev => ({
-      ...prev,
-      specialites: prev.specialites.includes(specialite)
-        ? prev.specialites.filter(s => s !== specialite)
-        : [...prev.specialites, specialite]
-    }));
-  };
-
-  const handleGradeToggle = (grade: Grade) => {
-    setFormData(prev => ({
-      ...prev,
-      grades: prev.grades.includes(grade)
-        ? prev.grades.filter(g => g !== grade)
-        : [...prev.grades, grade]
-    }));
   };
 
   return (
@@ -190,7 +201,11 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                     <select
                       className={`form-select ${!formData.necessiteVehicule ? 'disabled' : ''}`}
                       value={formData.directionAssociee}
-                      onChange={(e) => setFormData(prev => ({ ...prev, directionAssociee: e.target.value as DirectionAssociee }))}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        directionAssociee: e.target.value as DirectionAssociee,
+                        vehicule: '' // Reset vehicule quand on change de direction
+                      }))}
                       disabled={!formData.necessiteVehicule}
                       required
                     >
@@ -202,6 +217,30 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                       <p className="form-hint">Activez "Nécessite un véhicule" pour sélectionner une direction</p>
                     )}
                   </div>
+
+                  {formData.necessiteVehicule && (
+                    <div className="form-group direction-group">
+                      <label className="form-label">Sélectionner un véhicule</label>
+                      {loadingVehicles ? (
+                        <p className="form-hint">Chargement des véhicules...</p>
+                      ) : vehicles.length > 0 ? (
+                        <select
+                          className="form-select"
+                          value={formData.vehicule || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, vehicule: e.target.value }))}
+                        >
+                          <option value="">Aucun véhicule sélectionné</option>
+                          {vehicles.map(vehicle => (
+                            <option key={vehicle._id} value={vehicle._id}>
+                              {vehicle.immatriculation} - {vehicle.marque || 'N/A'} {vehicle.modele || ''}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="form-hint">Aucun véhicule disponible pour cette direction</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -246,35 +285,31 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
             </h2>
             
             <div className="criteria-group">
-              <label className="criteria-label">Spécialités requises</label>
-              <div className="checkbox-group">
-                {specialiteOptions.map(option => (
-                  <label key={option.value} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.specialites.includes(option.value)}
-                      onChange={() => handleSpecialiteToggle(option.value)}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
+              <label className="criteria-label">Spécialités requises (séparées par virgule)</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.specialites.join(', ')}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  specialites: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '')
+                }))}
+                placeholder="Ex: Pédagogique, Orientation"
+              />
             </div>
 
             <div className="criteria-group">
-              <label className="criteria-label">Grades acceptés</label>
-              <div className="checkbox-group">
-                {gradeOptions.map(option => (
-                  <label key={option.value} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.grades.includes(option.value)}
-                      onChange={() => handleGradeToggle(option.value)}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
+              <label className="criteria-label">Grades acceptés (séparés par virgule)</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.grades.join(', ')}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  grades: e.target.value.split(',').map(g => g.trim()).filter(g => g !== '')
+                }))}
+                placeholder="Ex: A, B, C"
+              />
             </div>
           </div>
 
@@ -310,21 +345,18 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
           <div className="form-section">
             <h2 className="section-title">
               <Upload size={18} />
-              Document joint (optionnel)
+              Fichier joint *
             </h2>
-            <div className="file-upload">
+            <div className="form-group">
+              <label className="form-label">Chemin du fichier</label>
               <input
-                type="file"
-                id="file-input"
-                className="file-input"
-                accept=".pdf"
-                onChange={(e) => setFormData(prev => ({ ...prev, fichierJoint: e.target.files?.[0] }))}
+                type="text"
+                className="form-input"
+                value={formData.fichierJoint}
+                onChange={(e) => setFormData(prev => ({ ...prev, fichierJoint: e.target.value }))}
+                placeholder="Ex: /uploads/task-document.pdf"
+                required
               />
-              <label htmlFor="file-input" className="file-label">
-                <Upload size={20} />
-                <span>Cliquez pour télécharger un fichier PDF</span>
-              </label>
-              <p className="file-hint">Format accepté: PDF uniquement</p>
             </div>
           </div>
         </form>
