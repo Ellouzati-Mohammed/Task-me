@@ -23,8 +23,8 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
       try {
         setLoading(true);
         
-        // Charger les utilisateurs
-        const usersResponse = await api.get('/users');
+        // Charger uniquement les auditeurs
+        const usersResponse = await api.get('/users/auditeurs/list');
         setUsers(usersResponse.data.data || usersResponse.data);
         
         // Charger les affectations existantes pour cette tâche

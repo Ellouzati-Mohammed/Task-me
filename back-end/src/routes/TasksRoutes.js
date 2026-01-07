@@ -1,6 +1,50 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/TaskModel');
+const User = require('../models/UsersModel');
+const Affectation = require('../models/AffectationModel');
+
+// Récupérer les statistiques du dashboard
+router.get('/stats', async (req, res) => {
+  try {
+    // Compter les tâches par statut
+    const totalTasks = await Task.countDocuments();
+    const pendingTasks = await Task.countDocuments({ 
+      statutTache: { $in: ['CREEE', 'EN_AFFECTATION'] } 
+    });
+    const completedTasks = await Task.countDocuments({ statutTache: 'TERMINEE' });
+    const inProgressTasks = await Task.countDocuments({ statutTache: 'EN_COURS' });
+    const assignedTasks = await Task.countDocuments({ statutTache: 'COMPLETEE_AFFECTEE' });
+    const cancelledTasks = await Task.countDocuments({ statutTache: 'ANNULEE' });
+    
+    // Compter les auditeurs actifs
+    const activeAuditors = await User.countDocuments({ role: 'auditeur' });
+    
+    // Calculer le taux d'acceptation
+    const totalAffectations = await Affectation.countDocuments();
+    const acceptedAffectations = await Affectation.countDocuments({ statutAffectation: 'ACCEPTEE' });
+    const acceptanceRate = totalAffectations > 0 
+      ? Math.round((acceptedAffectations / totalAffectations) * 100) 
+      : 0;
+    
+    res.json({ 
+      success: true, 
+      data: {
+        totalTasks,
+        pendingTasks,
+        completedTasks,
+        inProgressTasks,
+        assignedTasks,
+        cancelledTasks,
+        activeAuditors,
+        acceptanceRate
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors du calcul des statistiques:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors du calcul des statistiques' });
+  }
+});
 
 // Récupérer toutes les tâches
 router.get('/', async (req, res) => {

@@ -10,69 +10,50 @@ import {
   MapPin,
   Users,
   MoreHorizontal,
-  Plus
+  Play,
+  UserCheck,
+  Ban,
+  TrendingUp
 } from 'lucide-react';
-import { useState } from 'react';
-import { TaskFormModal } from '../components/TaskFormModal';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 import '../Styles/Dashboard.css';
 import type { StatCardProps,ActivityItem,Task,StatusConfig,TypeLabels } from "../types/Dashboard.d";
 
+interface RecentAffectation {
+  id: string;
+  userName: string;
+  taskName: string;
+  status: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
+  date: string;
+}
 
-const statusConfig: StatusConfig = {
-  pending: { label: 'En attente', className: 'pending' },
-  accepted: { label: 'Acceptée', className: 'accepted' },
-  refused: { label: 'Refusée', className: 'refused' },
-  delegated: { label: 'Déléguée', className: 'delegated' },
-  completed: { label: 'Terminée', className: 'completed' },
+// Mapping des statuts API vers les classes CSS
+const getStatusClass = (statut: string): string => {
+  const mapping: Record<string, string> = {
+    'CREEE': 'pending',
+    'EN_AFFECTATION': 'affectation',
+    'COMPLETEE_AFFECTEE': 'affectee',
+    'EN_COURS': 'encours',
+    'TERMINEE': 'completed',
+    'ANNULEE': 'cancelled'
+  };
+  return mapping[statut] || 'pending';
 };
 
-
-const typeLabels: TypeLabels = {
-  formateur: 'Formateur',
-  membre_jury: 'Membre de jury',
-  beneficiaire_formation: 'Bénéficiaire',
-  observateur: 'Observateur',
-  concepteur_evaluation: 'Concepteur',
+// Mapping des statuts API vers les labels d'affichage
+const getStatusLabel = (statut: string): string => {
+  const mapping: Record<string, string> = {
+    'CREEE': 'Créé',
+    'EN_AFFECTATION': 'En affectation',
+    'COMPLETEE_AFFECTEE': 'Complétée/Affectée',
+    'EN_COURS': 'En cours',
+    'TERMINEE': 'Terminée',
+    'ANNULEE': 'Annulée'
+  };
+  return mapping[statut] || statut;
 };
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    name: 'Formation React Avancé',
-    description: 'Formation sur les concepts avancés de React incluant hooks personnalisés, performance et patterns de conception.',
-    status: 'pending',
-    type: 'formateur',
-    startDate: '2024-02-15',
-    endDate: '2024-02-17',
-    direction: 'rabat_casa',
-    placesCount: 2,
-    isRemunerated: true
-  },
-  {
-    id: '2',
-    name: 'Jury Certification Dev',
-    description: 'Participation au jury de certification pour développeurs web niveau 5.',
-    status: 'accepted',
-    type: 'membre_jury',
-    startDate: '2024-02-20',
-    endDate: '2024-02-20',
-    placesCount: 1,
-    isRemunerated: true
-  },
-  {
-    id: '3',
-    name: 'Audit Pédagogique Q1',
-    description: 'Audit des pratiques pédagogiques du premier trimestre.',
-    status: 'delegated',
-    type: 'observateur',
-    startDate: '2024-02-25',
-    endDate: '2024-02-28',
-    direction: 'rabat_casa',
-    placesCount: 3,
-    isRemunerated: false
-  }
-];
 
 const activityConfig = {
   accepted: { icon: CheckCircle, color: 'success', label: 'a accepté' },
@@ -81,14 +62,6 @@ const activityConfig = {
   created: { icon: Clock, color: 'info', label: 'a créé' },
   assigned: { icon: User, color: 'accent', label: 'a été assigné à' },
 };
-
-const mockActivities: ActivityItem[] = [
-  { id: '1', type: 'accepted', user: 'Ahmed Benali', task: 'Formation React Avancé', time: 'Il y a 5 min' },
-  { id: '2', type: 'delegated', user: 'Fatima Zahra', task: 'Audit Pédagogique Q1', time: 'Il y a 15 min' },
-  { id: '3', type: 'created', user: 'Mohammed Alami', task: 'Jury Certification Dev', time: 'Il y a 1h' },
-  { id: '4', type: 'refused', user: 'Sara Idrissi', task: 'Observation Stage', time: 'Il y a 2h' },
-  { id: '5', type: 'assigned', user: 'Youssef Bennani', task: 'Conception Évaluation', time: 'Il y a 3h' },
-];
 
 function StatCard({ 
   title, 
@@ -126,18 +99,43 @@ function StatCard({
 
 // Recent Activity Component
 
-function RecentActivity() {
+interface RecentActivityProps {
+  affectations: RecentAffectation[];
+}
+
+function RecentActivity({ affectations }: RecentActivityProps) {
+  
+  if (affectations.length === 0) {
+    return (
+      <div className="recent-activity">
+        <h3 className="recent-activity-title">Activité récente</h3>
+        <div className="activity-list" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
+          Aucune activité récente
+        </div>
+      </div>
+    );
+  }
+
+  const getActivityConfig = (status: string) => {
+    const configs: Record<string, { icon: typeof CheckCircle, color: string, label: string }> = {
+      'ACCEPTEE': { icon: CheckCircle, color: 'success', label: 'a accepté' },
+      'REFUSEE': { icon: XCircle, color: 'destructive', label: 'a refusé' },
+      'DELEGUEE': { icon: ArrowRightLeft, color: 'delegated', label: 'a délégué' },
+      'PROPOSEE': { icon: Clock, color: 'info', label: 'a été assigné' },
+    };
+    return configs[status] || configs['PROPOSEE'];
+  };
+
   return (
     <div className="recent-activity">
       <h3 className="recent-activity-title">Activité récente</h3>
       <div className="activity-list">
-        {mockActivities.map((activity, index) => {
-          const config = activityConfig[activity.type];
+        {affectations.map((affectation, index) => {
+          const config = getActivityConfig(affectation.status);
           const Icon = config.icon;
-          
           return (
             <div 
-              key={activity.id} 
+              key={affectation.id} 
               className="activity-item animate-slide-up"
               style={{ animationDelay: `${index * 100}ms` }}
             >
@@ -146,11 +144,9 @@ function RecentActivity() {
               </div>
               <div className="activity-content">
                 <p className="activity-text">
-                  <span className="activity-user">{activity.user}</span>
-                  {' '}{config.label}{' '}
-                  <span className="activity-user">{activity.task}</span>
+                  <span className="activity-user">{affectation.userName}</span> {config.label} la tâche <strong>{affectation.taskName}</strong>
                 </p>
-                <p className="activity-time">{activity.time}</p>
+                <p className="activity-time">{new Date(affectation.date).toLocaleDateString('fr-FR')}</p>
               </div>
             </div>
           );
@@ -162,10 +158,22 @@ function RecentActivity() {
 
 // Task List Component
 
-function TaskList() {
+interface TaskListProps {
+  tasks: Task[];
+}
+
+function TaskList({ tasks }: TaskListProps) {
+  if (tasks.length === 0) {
+    return (
+      <div className="task-card" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+        Aucune tâche récente
+      </div>
+    );
+  }
+
   return (
     <div className="task-list">
-      {mockTasks.map((task, index) => (
+      {tasks.map((task, index) => (
         <div
           key={task.id}
           className="task-card card-hover animate-slide-up"
@@ -175,8 +183,8 @@ function TaskList() {
             <div className="task-main">
               <div className="task-header">
                 <h3 className="task-name">{task.name}</h3>
-                <span className={`task-badge ${statusConfig[task.status].className}`}>
-                  {statusConfig[task.status].label}
+                <span className={`task-badge ${getStatusClass(task.status)}`}>
+                  {getStatusLabel(task.status)}
                 </span>
               </div>
               
@@ -204,7 +212,7 @@ function TaskList() {
 
             <div className="task-actions">
               <span className="task-type-badge">
-                {typeLabels[task.type]}
+                {task.type}
               </span>
               {task.isRemunerated && (
                 <span className="task-remunerated-badge">
@@ -223,8 +231,84 @@ function TaskList() {
 }
 
 export function Dashboard() {
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const { user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [recentAffectations, setRecentAffectations] = useState<RecentAffectation[]>([]);
+  const [stats, setStats] = useState({
+    totalTasks: 0,
+    pendingTasks: 0,
+    completedTasks: 0,
+    activeAuditors: 0,
+    inProgressTasks: 0,
+    assignedTasks: 0,
+    cancelledTasks: 0,
+    acceptanceRate: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Récupérer les statistiques depuis l'API
+        const statsResponse = await api.get('/tasks/stats');
+        const statsData = statsResponse.data.data;
+        
+        setStats(statsData);
+        
+        // Récupérer les tâches récentes
+        const tasksResponse = await api.get('/tasks');
+        const apiTasks = tasksResponse.data.data || tasksResponse.data;
+        
+        // Mapper les tâches
+        const mappedTasks = apiTasks.map((task: Record<string, unknown>) => ({
+          id: task._id as string,
+          name: task.nom as string,
+          description: task.description as string,
+          status: task.statutTache as string,
+          type: task.typeTache as string,
+          startDate: task.dateDebut as string,
+          endDate: task.dateFin as string,
+          direction: task.directionAssociee as string,
+          placesCount: task.nombrePlaces as number,
+          isRemunerated: task.remuneree as boolean
+        }));
+        
+        // Prendre les 5 tâches les plus récentes
+        const recentTasks = mappedTasks.slice(0, 5);
+        setTasks(recentTasks);
+        
+        // Récupérer les affectations récentes
+        const affectationsResponse = await api.get('/affectations/recent?limit=5');
+        const apiAffectations = affectationsResponse.data.data || affectationsResponse.data;
+        
+        console.log('API Affectations:', apiAffectations);
+        
+        // Mapper les affectations (même si tache est null)
+        const mappedAffectations = apiAffectations
+          .filter((aff: any) => aff.auditeur) // Filtrer seulement si auditeur existe
+          .map((aff: any) => ({
+            id: aff._id,
+            userName: `${aff.auditeur.prenom} ${aff.auditeur.nom}`,
+            taskName: aff.tache?.nom || 'Tâche supprimée',
+            status: aff.statutAffectation,
+            date: aff.updatedAt || aff.createdAt
+          }));
+        
+        console.log('Mapped Affectations:', mappedAffectations);
+        
+        setRecentAffectations(mappedAffectations);
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement du dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="dashboard-content">
@@ -232,38 +316,61 @@ export function Dashboard() {
         <h1 className="welcome-title">Bonjour, {user?.prenom}!</h1>
         <p className="welcome-subtitle">Voici un aperçu de votre activité</p>
       </div>
-      <div className="stats-grid">
+      
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+          Chargement...
+        </div>
+      ) : (
+        <>
+          <div className="stats-grid">
             <StatCard
               title="Tâches totales"
-              value={24}
-              change="+12% ce mois"
+              value={stats.totalTasks}
               icon={ClipboardList}
               iconColor="#64748b"
-              changeType="positive"
             />
             <StatCard
               title="En attente"
-              value={8}
-              change="3 urgentes"
+              value={stats.pendingTasks}
               icon={Clock}
               iconColor="#f59e0b"
-              changeType="negative"
+            />
+            <StatCard
+              title="En cours"
+              value={stats.inProgressTasks}
+              icon={Play}
+              iconColor="#3b82f6"
             />
             <StatCard
               title="Complétées"
-              value={16}
-              change="+5 cette semaine"
+              value={stats.completedTasks}
               icon={CheckCircle2}
               iconColor="#22c55e"
-              changeType="positive"
+            />
+            <StatCard
+              title="Affectées"
+              value={stats.assignedTasks}
+              icon={UserCheck}
+              iconColor="#14b8a6"
+            />
+            <StatCard
+              title="Annulées"
+              value={stats.cancelledTasks}
+              icon={Ban}
+              iconColor="#ef4444"
+            />
+            <StatCard
+              title="Taux d'acceptation"
+              value={`${stats.acceptanceRate}%`}
+              icon={TrendingUp}
+              iconColor="#10b981"
             />
             <StatCard
               title="Auditeurs actifs"
-              value={12}
-              change="+3 ce mois"
+              value={stats.activeAuditors}
               icon={Users}
               iconColor="#8b5cf6"
-              changeType="positive"
             />
           </div>
 
@@ -271,45 +378,15 @@ export function Dashboard() {
             <div className="tasks-section">
               <div className="tasks-header">
                 <h2 className="tasks-title">Tâches récentes</h2>
-                <div className="tasks-header-actions">
-                  <button className="create-task-button" onClick={() => setShowCreateModal(true)}>
-                    <Plus className="button-icon" />
-                    Nouvelle tâche
-                  </button>
-                </div>
               </div>
-              <TaskList />
+              <TaskList tasks={tasks} />
             </div>
             <div className="right-column">
-              <RecentActivity />
-              
-              {/* Quick Actions */}
-              <div className="quick-actions-card">
-                <h3 className="quick-actions-title">Actions rapides</h3>
-                <div className="quick-actions-list">
-                  <button className="action-button" onClick={() => setShowCreateModal(true)}>
-                    <Plus className="action-icon" />
-                    Créer une tâche
-                  </button>
-                  <button className="action-button">
-                    <Users className="action-icon" />
-                    Ajouter un auditeur
-                  </button>
-                  <button className="action-button">
-                    <ClipboardList className="action-icon" />
-                    Mes tâches
-                  </button>
-                </div>
-              </div>
+              <RecentActivity affectations={recentAffectations} />
             </div>
           </div>
-
-          {showCreateModal && (
-            <TaskFormModal 
-              onClose={() => setShowCreateModal(false)} 
-              mode="create"
-            />
-          )}
-        </div>
+        </>
+      )}
+    </div>
   );
 }

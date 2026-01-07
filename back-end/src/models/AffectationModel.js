@@ -10,7 +10,9 @@ const affectationSchema = new Schema({
     //rapportAlgorithmique: { type: String }, // trace du choix IA ou semi-auto
     affectationOrigine: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment' }, 
     auditeurPropose: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    canDelegate: { type: Boolean, default: true }, // false si la tâche vient d'une délégation (ne peut pas déléguer 2 fois)
     dateAffectation: { type: Date, default: Date.now } },
+ { timestamps: true }
  );                         
 
 module.exports = mongoose.model("Affectation", affectationSchema);

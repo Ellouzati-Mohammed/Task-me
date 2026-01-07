@@ -22,7 +22,7 @@ export function DelegateModal({ affectationId, taskName, onClose, onSuccess }: D
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/users');
+        const response = await api.get('/users/auditeurs/list');
         setUsers(response.data.data || response.data);
       } catch (error) {
         console.error('Erreur lors de la récupération des utilisateurs:', error);

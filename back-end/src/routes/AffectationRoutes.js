@@ -43,6 +43,23 @@ router.get('/my-tasks', authMiddleware, async (req, res) => {
   }
 });
 
+// Récupérer les 5 dernières affectations pour l'activité récente
+router.get('/recent', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const affectations = await Affectation.find()
+      .populate('auditeur', 'prenom nom')
+      .populate('tache', 'nom')
+      .sort({ updatedAt: -1, createdAt: -1, dateAffectation: -1 })
+      .limit(limit);
+    
+    res.json({ success: true, data: affectations });
+  } catch (error) {
+    console.error('Erreur récupération affectations récentes:', error);
+    res.status(500).json({ success: false, message: 'Erreur récupération des affectations récentes' });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const newAffectation = new Affectation(req.body);
@@ -127,6 +144,7 @@ router.post('/assign', authMiddleware, async (req, res) => {
     // Ajouter l'affectation d'origine si elle est fournie (cas de délégation)
     if (affectationOrigine) {
       newAffectationData.affectationOrigine = affectationOrigine;
+      newAffectationData.canDelegate = false; // Ne peut pas déléguer une tâche déjà déléguée
     }
     
     const newAffectation = new Affectation(newAffectationData);
@@ -174,6 +192,11 @@ router.put('/:id', async (req, res) => {
     if (req.body.statutAffectation === 'ACCEPTEE') {
       const Task = require('../models/TaskModel');
       
+      // Si cette affectation a une affectation d'origine (cas de délégation acceptée), supprimer l'affectation d'origine
+      if (updatedAffectation.affectationOrigine) {
+        await Affectation.findByIdAndDelete(updatedAffectation.affectationOrigine);
+      }
+      
       // Récupérer la tâche associée
       const task = await Task.findById(updatedAffectation.tache._id || updatedAffectation.tache);
       
@@ -181,21 +204,30 @@ router.put('/:id', async (req, res) => {
         // Récupérer toutes les affectations de cette tâche
         const allAffectations = await Affectation.find({ tache: task._id });
         
-        // Vérifier si toutes les affectations sont acceptées
-        const allAccepted = allAffectations.every(
-          affectation => affectation.statutAffectation === 'ACCEPTEE'
-        );
-        
-        // Vérifier aussi que le nombre d'affectations acceptées correspond au nombre de places
+        // Compter uniquement les affectations acceptées
         const acceptedCount = allAffectations.filter(
           affectation => affectation.statutAffectation === 'ACCEPTEE'
         ).length;
         
-        // Si toutes les places sont pourvues et toutes acceptées, changer le statut
-        if (allAccepted && acceptedCount === task.nombrePlaces) {
+        // Si le nombre d'affectations acceptées correspond au nombre de places, changer le statut
+        if (acceptedCount === task.nombrePlaces) {
           task.statutTache = 'COMPLETEE_AFFECTEE';
           await task.save();
         }
+      }
+    }
+
+    // Vérifier si l'utilisateur vient de refuser la tâche
+    if (req.body.statutAffectation === 'REFUSEE') {
+      // Si cette affectation a une affectation d'origine (cas de délégation), refuser aussi l'affectation d'origine
+      if (updatedAffectation.affectationOrigine) {
+        await Affectation.findByIdAndUpdate(
+          updatedAffectation.affectationOrigine,
+          { 
+            statutAffectation: 'REFUSEE',
+            justificatif: `Refus suite à délégation: ${req.body.justificatif || 'Non spécifié'}`
+          }
+        );
       }
     }
     

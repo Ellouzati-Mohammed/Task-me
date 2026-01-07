@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHeader } from '../components/PageHeader';
 import { DelegateModal } from '../components/DelegateModal';
+import { RefuseModal } from '../components/RefuseModal';
 import api from '../services/api';
 import '../Styles/Tasks.css';
 import type { Affectation, MyTaskStatus, MyTaskStatusConfig } from "../types/Affectation.d";
@@ -44,6 +45,9 @@ export function MyTasks() {
   const [showDelegateModal, setShowDelegateModal] = useState(false);
   const [selectedAffectationId, setSelectedAffectationId] = useState<string | null>(null);
   const [selectedTaskName, setSelectedTaskName] = useState<string>('');
+  const [showRefuseModal, setShowRefuseModal] = useState(false);
+  const [selectedAffectationForRefuse, setSelectedAffectationForRefuse] = useState<string | null>(null);
+  const [selectedTaskNameForRefuse, setSelectedTaskNameForRefuse] = useState<string>('');
 
   // Récupérer les tâches de l'utilisateur connecté
   useEffect(() => {
@@ -96,22 +100,23 @@ export function MyTasks() {
     }
   };
 
-  const handleRefuse = async (affectationId: string) => {
-    const justificatif = prompt('Veuillez saisir la raison du refus:');
-    if (!justificatif) return;
-    
-    try {
-      await api.put(`/affectations/${affectationId}`, { 
-        statutAffectation: 'REFUSEE',
-        justificatif 
-      });
-      // Recharger les tâches
-      const response = await api.get('/affectations/my-tasks');
-      if (response.data.success) {
-        setTasks(response.data.data);
-      }
-    } catch (err) {
-      console.error('Erreur refus tâche:', err);
+  const handleRefuse = async (affectationId: string, taskName: string) => {
+    setSelectedAffectationForRefuse(affectationId);
+    setSelectedTaskNameForRefuse(taskName);
+    setShowRefuseModal(true);
+  };
+
+  const handleCloseRefuseModal = () => {
+    setShowRefuseModal(false);
+    setSelectedAffectationForRefuse(null);
+    setSelectedTaskNameForRefuse('');
+  };
+
+  const handleRefuseSuccess = async () => {
+    // Recharger les tâches
+    const response = await api.get('/affectations/my-tasks');
+    if (response.data.success) {
+      setTasks(response.data.data);
     }
   };
 
@@ -210,18 +215,20 @@ export function MyTasks() {
                         </button>
                         <button 
                           className="task-action-btn refuse"
-                          onClick={() => handleRefuse(affectation._id)}
+                          onClick={() => handleRefuse(affectation._id, task.nom)}
                           title="Refuser"
                         >
                           <XCircle size={18} />
                         </button>
-                        <button 
-                          className="task-action-btn delegate"
-                          onClick={() => handleDelegate(affectation._id, task.nom)}
-                          title="Déléguer"
-                        >
-                          <ArrowRightLeft size={18} />
-                        </button>
+                        {affectation.canDelegate !== false && (
+                          <button 
+                            className="task-action-btn delegate"
+                            onClick={() => handleDelegate(affectation._id, task.nom)}
+                            title="Déléguer"
+                          >
+                            <ArrowRightLeft size={18} />
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <button className="task-menu-button">
@@ -272,6 +279,16 @@ export function MyTasks() {
           taskName={selectedTaskName}
           onClose={handleCloseDelegateModal}
           onSuccess={handleDelegateSuccess}
+        />
+      )}
+
+      {/* Modal de refus */}
+      {showRefuseModal && selectedAffectationForRefuse && (
+        <RefuseModal 
+          affectationId={selectedAffectationForRefuse}
+          taskName={selectedTaskNameForRefuse}
+          onClose={handleCloseRefuseModal}
+          onSuccess={handleRefuseSuccess}
         />
       )}
     </div>
