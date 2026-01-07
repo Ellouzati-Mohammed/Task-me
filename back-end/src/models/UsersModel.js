@@ -17,13 +17,21 @@ const userSchema = new Schema({
     dateembauche:{ type: Date }
 });
 
+// Hachage du mot de passe avant la sauvegarde
+userSchema.pre('save', async function() {
+  // Ne hacher que si le mot de passe a été modifié ou est nouveau
+  if (!this.isModified('motdePasse')) {
+    return;
+  }
+  
+  const salt = await bcrypt.genSalt(10);
+  this.motdePasse = await bcrypt.hash(this.motdePasse, salt);
+});
 
-/*
-userSchema.pre('save', passwordHash);
-
+// Méthode pour comparer les mots de passe
 userSchema.methods.comparePassword = function (password) {
   return bcrypt.compare(password, this.motdePasse);
 };
-*/
+
 module.exports = mongoose.model("User", userSchema);
 

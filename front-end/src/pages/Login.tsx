@@ -1,19 +1,31 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Login.css';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', { email, password });
-    // Simuler la connexion et rediriger vers le dashboard
-    navigate('/dashboard');
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Erreur de connexion. Vérifiez vos identifiants.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,6 +77,20 @@ export function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
+            {error && (
+              <div style={{
+                padding: '12px',
+                backgroundColor: '#fee',
+                border: '1px solid #fcc',
+                borderRadius: '6px',
+                color: '#c33',
+                marginBottom: '16px',
+                fontSize: '14px'
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="form-field">
               <label htmlFor="email" className="field-label">Adresse email</label>
               <input
@@ -103,8 +129,8 @@ export function Login() {
               </div>
             </div>
 
-            <button type="submit" className="login-button">
-              Se connecter
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? 'Connexion en cours...' : 'Se connecter'}
             </button>
           </form>
 

@@ -10,6 +10,7 @@ const affectationSchema = new Schema({
     //rapportAlgorithmique: { type: String }, // trace du choix IA ou semi-auto
     affectationOrigine: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment' }, 
     auditeurPropose: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    dateAffectation: { type: Date, default: Date.now } },);                         
+    dateAffectation: { type: Date, default: Date.now } },
+ );                         
 
 module.exports = mongoose.model("Affectation", affectationSchema);

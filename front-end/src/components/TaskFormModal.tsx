@@ -65,7 +65,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
         specialites: task.specialites || [],
         grades: task.grades || [],
         necessiteVehicule: task.necessiteVehicule || false,
-        vehiculeId: task.vehicule || '',
+        vehiculeId: task.vehiculeId || '',
         directionAssociee: task.directionAssociee || 'Rabat-Casa',
         nombrePlaces: task.nombrePlaces || 1,
         urgent: task.urgent || false
@@ -86,21 +86,26 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
     };
   }, []);
 
-  // Charger les véhicules quand la direction change
+  // Charger les véhicules disponibles quand la direction ou les dates changent
   useEffect(() => {
     const fetchVehicles = async () => {
-      if (formData.necessiteVehicule && formData.directionAssociee) {
+      if (formData.necessiteVehicule && formData.directionAssociee && formData.dateDebut && formData.dateFin) {
         try {
           setLoadingVehicles(true);
-          const response = await api.get('/vehicles');
-          const allVehicles = response.data.data || response.data;
-          // Filtrer les véhicules par direction
-          const filteredVehicles = allVehicles.filter(
-            (v: Vehicle) => v.direction === formData.directionAssociee
-          );
-          setVehicles(filteredVehicles);
+          const response = await api.get('/vehicles/available', {
+            params: {
+              direction: formData.directionAssociee,
+              dateDebut: formData.dateDebut,
+              dateFin: formData.dateFin
+            }
+          });
+          const availableVehicles = response.data.data || [];
+          // Filtrer uniquement les véhicules disponibles
+          const onlyAvailable = availableVehicles.filter((v: any) => v.isAvailable);
+          setVehicles(onlyAvailable);
         } catch (error) {
           console.error('Erreur lors de la récupération des véhicules:', error);
+          setVehicles([]);
         } finally {
           setLoadingVehicles(false);
         }
@@ -110,7 +115,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
     };
 
     fetchVehicles();
-  }, [formData.necessiteVehicule, formData.directionAssociee]);
+  }, [formData.necessiteVehicule, formData.directionAssociee, formData.dateDebut, formData.dateFin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,8 +128,9 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
         vehicule: vehiculeId || null
       };
 
-      if (mode === 'edit' && task?._id) {
-        await api.put(`/tasks/${task._id}`, dataToSend);
+      const taskId = (task as { _id?: string; id?: string })?._id || (task as { _id?: string; id?: string })?.id;
+      if (mode === 'edit' && taskId) {
+        await api.put(`/tasks/${taskId}`, dataToSend);
         console.log('Tâche mise à jour avec succès');
       } else {
         await api.post('/tasks', dataToSend);
@@ -282,8 +288,12 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                   {formData.necessiteVehicule && (
                     <div className="form-group direction-group">
                       <label className="form-label">Sélectionner un véhicule</label>
-                      {loadingVehicles ? (
-                        <p className="form-hint">Chargement des véhicules...</p>
+                      {!formData.dateDebut || !formData.dateFin ? (
+                        <p className="form-hint" style={{ color: '#f59e0b' }}>
+                          Veuillez sélectionner les dates de début et de fin pour voir les véhicules disponibles
+                        </p>
+                      ) : loadingVehicles ? (
+                        <p className="form-hint">Chargement des véhicules disponibles...</p>
                       ) : vehicles.length > 0 ? (
                         <select
                           className="form-select"
@@ -298,7 +308,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                           ))}
                         </select>
                       ) : (
-                        <p className="form-hint">Aucun véhicule disponible pour cette direction</p>
+                        <p className="form-hint">Aucun véhicule disponible pour cette direction et ces dates</p>
                       )}
                     </div>
                   )}

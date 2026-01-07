@@ -271,11 +271,38 @@
   white-space: nowrap;
 }
 
+/* Statuts de tâches */
 .task-status-badge.pending {
   background-color: #fef3c7;
   color: #92400e;
 }
 
+.task-status-badge.affectation {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.task-status-badge.affectee {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.task-status-badge.encours {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.task-status-badge.completed {
+  background-color: #d1d5db;
+  color: #1f2937;
+}
+
+.task-status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Anciens statuts (compatibilité) */
 .task-status-badge.accepted {
   background-color: #d1fae5;
   color: #065f46;
@@ -289,11 +316,6 @@
 .task-status-badge.delegated {
   background-color: #e0e7ff;
   color: #3730a3;
-}
-
-.task-status-badge.completed {
-  background-color: #dbeafe;
-  color: #1e40af;
 }
 
 .task-item-badges {

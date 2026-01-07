@@ -13,7 +13,7 @@ const taskSchema = new Schema({
     grades: [String],
     commune: { type: Boolean, default: false },
     necessiteVehicule: { type: Boolean, default: false },
-    vehicule: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicule" },
+    vehicule: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
     directionAssociee: { type: String, enum: ["Rabat-Casa", "Meknès-Errachidia", "Marrakech-Agadir"] },
     fichierJoint: {type:String},
     nombrePlaces: {type:Number, default:1},

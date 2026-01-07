@@ -14,7 +14,8 @@ import { TaskFormModal } from '../components/TaskFormModal';
 import { AffectationModal } from '../components/AffectationModal';
 import { TaskDetailModal } from '../components/TaskDetailModal';
 import '../Styles/Tasks.css';
-import type { Task, TaskStatus, StatusConfig, TypeLabels } from "../types/Dashboard.d";
+import type { Task, TaskStatus, StatusConfig, TypeLabels, TaskType } from "../types/Dashboard.d";
+import type { TaskFormData } from "../types/TaskForm.d";
 import api from '../services/api';
 
 const statusConfig: StatusConfig = {
@@ -76,7 +77,7 @@ export function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [editingTask, setEditingTask] = useState<Record<string, unknown> | null>(null);
   const [showAffectationModal, setShowAffectationModal] = useState(false);
   const [selectedTaskForAffectation, setSelectedTaskForAffectation] = useState<string | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -91,17 +92,17 @@ export function Tasks() {
         const apiTasks = response.data.data || response.data;
         
         // Mapper les données de l'API au format attendu
-        const mappedTasks = apiTasks.map((task: any) => ({
-          id: task._id,
-          name: task.nom,
-          description: task.description,
-          status: mapStatutToStatus(task.statutTache),
-          type: mapTypeTacheToType(task.typeTache),
-          startDate: task.dateDebut,
-          endDate: task.dateFin,
-          direction: task.directionAssociee,
-          placesCount: task.nombrePlaces,
-          isRemunerated: task.remuneree
+        const mappedTasks = apiTasks.map((task: Record<string, unknown>) => ({
+          id: task._id as string,
+          name: task.nom as string,
+          description: task.description as string,
+          status: mapStatutToStatus(task.statutTache as string),
+          type: mapTypeTacheToType(task.typeTache as string),
+          startDate: task.dateDebut as string,
+          endDate: task.dateFin as string,
+          direction: task.directionAssociee as string,
+          placesCount: task.nombrePlaces as number,
+          isRemunerated: task.remuneree as boolean
         }));
         
         setTasks(mappedTasks);
@@ -126,17 +127,17 @@ export function Tasks() {
         const apiTasks = response.data.data || response.data;
         
         // Mapper les données de l'API au format attendu
-        const mappedTasks = apiTasks.map((task: any) => ({
-          id: task._id,
-          name: task.nom,
-          description: task.description,
-          status: mapStatutToStatus(task.statutTache),
-          type: mapTypeTacheToType(task.typeTache),
-          startDate: task.dateDebut,
-          endDate: task.dateFin,
-          direction: task.directionAssociee,
-          placesCount: task.nombrePlaces,
-          isRemunerated: task.remuneree
+        const mappedTasks = apiTasks.map((task: Record<string, unknown>) => ({
+          id: task._id as string,
+          name: task.nom as string,
+          description: task.description as string,
+          status: mapStatutToStatus(task.statutTache as string),
+          type: mapTypeTacheToType(task.typeTache as string),
+          startDate: task.dateDebut as string,
+          endDate: task.dateFin as string,
+          direction: task.directionAssociee as string,
+          placesCount: task.nombrePlaces as number,
+          isRemunerated: task.remuneree as boolean
         }));
         
         setTasks(mappedTasks);
@@ -164,6 +165,7 @@ export function Tasks() {
     try {
       const response = await api.get(`/tasks/${taskId}`);
       const taskData = response.data.data || response.data;
+      // Garder les données brutes pour le modal
       setEditingTask(taskData);
       setOpenMenuId(null);
     } catch (error) {
@@ -335,12 +337,14 @@ export function Tasks() {
       )}
 
       {showCreateModal && <TaskFormModal onClose={handleTaskUpdated} mode="create" />}
-      {editingTask && <TaskFormModal onClose={handleTaskUpdated} mode="edit" task={editingTask} />}
+      {editingTask && <TaskFormModal onClose={handleTaskUpdated} mode="edit" task={editingTask as unknown as TaskFormData & { id?: string }} />}
       
       {/* Modal d'affectation */}
       {showAffectationModal && selectedTaskForAffectation && (
         <AffectationModal 
           taskId={selectedTaskForAffectation}
+          taskName={tasks.find(t => t.id === selectedTaskForAffectation)?.name}
+          maxPlaces={tasks.find(t => t.id === selectedTaskForAffectation)?.placesCount}
           onClose={handleCloseAffectationModal}
         />
       )}

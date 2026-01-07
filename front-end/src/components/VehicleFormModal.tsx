@@ -10,15 +10,13 @@ const directionOptions = [
   { value: 'Marrakech-Agadir' as Direction, label: 'Marrakech-Agadir' }
 ];
 
-const initialFormData: VehicleFormData = {
-  immatriculation: '',
-  marque: '',
-  modele: '',
-  direction: 'Rabat-Casa'
-};
-
 export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleFormModalProps) {
-  const [formData, setFormData] = useState<VehicleFormData>(vehicle || initialFormData);
+  const [formData, setFormData] = useState<VehicleFormData>({
+    immatriculation: vehicle?.immatriculation || '',
+    marque: vehicle?.marque || '',
+    modele: vehicle?.modele || '',
+    direction: vehicle?.direction || 'Rabat-Casa'
+  });
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {

@@ -19,7 +19,7 @@ import '../Styles/Sidebar.css';
 const navItems = [
   { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard', roles: ['admin', 'coordinateur'] },
   { icon: ClipboardList, label: 'Tâches', href: '/tasks', roles: ['admin', 'coordinateur'] },
-  { icon: ClipboardCheck, label: 'Mes tâches', href: '/my-tasks', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: ClipboardCheck, label: 'Mes tâches', href: '/my-tasks', roles: ['auditeur'] },
   { icon: Users, label: 'Utilisateurs', href: '/users', roles: ['admin', 'coordinateur'] },
   { icon: Car, label: 'Véhicules', href: '/vehicles', roles: ['admin', 'coordinateur'] },
   { icon: Bell, label: 'Notifications', href: '/notifications', roles: ['admin', 'coordinateur', 'auditeur'] },
@@ -30,7 +30,13 @@ const navItems = [
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    if (window.confirm('Voulez-vous vraiment vous déconnecter ?')) {
+      logout();
+    }
+  };
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
@@ -76,13 +82,19 @@ export function Sidebar() {
 
         {/* User section */}
         <div className="sidebar-user-section">
-          {!isCollapsed && (
+          {!isCollapsed && user && (
             <div className="sidebar-user-info">
-              <p className="sidebar-user-name">Mohammed Alami</p>
-              <p className="sidebar-user-role">Super Admin</p>
+              <p className="sidebar-user-name">{user.prenom} {user.nom}</p>
+              <p className="sidebar-user-role">
+                {user.role === 'admin' ? 'Administrateur' : 
+                 user.role === 'coordinateur' ? 'Coordinateur' : 'Auditeur'}
+              </p>
             </div>
           )}
-          <button className={`sidebar-logout-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+          <button 
+            className={`sidebar-logout-btn ${isCollapsed ? 'collapsed' : 'expanded'}`}
+            onClick={handleLogout}
+          >
             <LogOut size={20} />
             {!isCollapsed && <span>Déconnexion</span>}
           </button>

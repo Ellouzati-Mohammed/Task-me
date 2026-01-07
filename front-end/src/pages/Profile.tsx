@@ -1,26 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Mail, Phone, GraduationCap, Lock, Save } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 import '../Styles/Profile.css';
 import type { UserProfile } from '../types/Profile.d';
 
-const mockProfile: UserProfile = {
-  id: '1',
-  firstName: 'Mohammed',
-  lastName: 'Alami',
-  email: 'mohammed.alami@taskme.com',
-  phone: '+212 6 12 34 56 78',
-  role: 'Admin',
-
-  grade: 'A',
-  hireDate: '2020-01-15'
-};
-
 export function Profile() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile>(mockProfile);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'info' | 'password'>('info');
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -28,23 +19,114 @@ export function Profile() {
     confirmPassword: ''
   });
 
+  // Récupérer les données du profil
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/auth/me');
+        if (response.data.success) {
+          const userData = response.data.user;
+          setProfile({
+            id: userData.id,
+            firstName: userData.prenom,
+            lastName: userData.nom,
+            email: userData.email,
+            phone: userData.phone || '',
+            role: userData.role,
+            grade: userData.grade,
+            hireDate: userData.dateembauche || ''
+          });
+        }
+      } catch (err) {
+        console.error('Erreur récupération profil:', err);
+        setError('Erreur lors du chargement du profil');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const handleProfileChange = (field: keyof UserProfile, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+    if (profile) {
+      setProfile(prev => prev ? { ...prev, [field]: value } : null);
+    }
   };
 
-  const handleSaveProfile = () => {
-    console.log('Saving profile:', profile);
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    
+    try {
+      // Mapper les champs du profil vers le format backend
+      const updateData = {
+        prenom: profile.firstName,
+        nom: profile.lastName,
+        email: profile.email,
+        phone: profile.phone
+      };
+      
+      const response = await api.put('/users/profile/me', updateData);
+      if (response.data.success) {
+        setIsEditing(false);
+        alert('Profil mis à jour avec succès');
+      }
+    } catch (err) {
+      console.error('Erreur mise à jour profil:', err);
+      alert('Erreur lors de la mise à jour du profil');
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('Les mots de passe ne correspondent pas');
       return;
     }
-    console.log('Changing password');
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+
+    try {
+      const response = await api.put('/users/profile/password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      if (response.data.success) {
+        alert('Mot de passe modifié avec succès');
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      }
+    } catch (err) {
+      console.error('Erreur changement mot de passe:', err);
+      const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(errorMessage || 'Erreur lors du changement de mot de passe');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <div className="profile-header">
+          <h1 className="profile-title">Mon Profil</h1>
+          <p className="profile-subtitle">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="profile-page">
+        <div className="profile-header">
+          <h1 className="profile-title">Mon Profil</h1>
+          <p className="profile-subtitle" style={{ color: '#c33' }}>{error || 'Erreur de chargement'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
@@ -58,7 +140,7 @@ export function Profile() {
         <div className="profile-sidebar">
           <div className="profile-avatar-card">
             <div className="profile-avatar-large">
-              {profile.firstName.charAt(0)}{profile.lastName.charAt(0)}
+              {profile.firstName?.charAt(0)}{profile.lastName?.charAt(0)}
             </div>
             <h2 className="profile-user-name">{profile.firstName} {profile.lastName}</h2>
             <p className="profile-user-role">{profile.role}</p>
@@ -67,16 +149,18 @@ export function Profile() {
 
           <div className="profile-stats-card">
            
-            {user?.role === 'auditeur' && (
+            {user?.role === 'auditeur' && profile.grade && (
               <div className="profile-stat-item">
                 <span className="stat-label">Grade</span>
                 <span className="stat-value">Grade {profile.grade}</span>
               </div>
             )}
-            <div className="profile-stat-item">
-              <span className="stat-label">Date d'embauche</span>
-              <span className="stat-value">{new Date(profile.hireDate).toLocaleDateString('fr-FR')}</span>
-            </div>
+            {profile.hireDate && (
+              <div className="profile-stat-item">
+                <span className="stat-label">Date d'embauche</span>
+                <span className="stat-value">{new Date(profile.hireDate).toLocaleDateString('fr-FR')}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -172,15 +256,13 @@ export function Profile() {
                     <input
                       type="tel"
                       className="form-input"
-                      value={profile.phone}
+                      value={profile.phone || ''}
                       onChange={(e) => handleProfileChange('phone', e.target.value)}
                       disabled={!isEditing}
                     />
                   </div>
 
-                 
-
-                  {user?.role === 'auditeur' && (
+                  {user?.role === 'auditeur' && profile.grade && (
                     <div className="form-group">
                       <label className="form-label">
                         <GraduationCap size={14} />

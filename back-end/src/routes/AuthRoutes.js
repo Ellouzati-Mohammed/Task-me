@@ -41,11 +41,11 @@ router.post('/register', async (req, res) => {
 
 // Connexion d’un utilisateur existant
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { email, motdePasse } = req.body;
 
   try {
-    // Vérifier si l’utilisateur existe
-    let user = await User.findOne({ username });
+    // Vérifier si l'utilisateur existe par email
+    let user = await User.findOne({email});
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -53,8 +53,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Vérifier que le mot de passe est bien présent
+    if (!motdePasse || !user.motdePasse) {
+      return res.status(400).json({
+        success: false,
+        message: 'Données de connexion invalides'
+      });
+    }
+
     // Vérifier le mot de passe
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await user.comparePassword(motdePasse);
     if (!isMatch) {
       return res.status(400).json({
         success: false,
@@ -63,13 +71,32 @@ router.post('/login', async (req, res) => {
     }
 
     // Générer un token JWT
-    const payload = { user: { id: user.id } };
+    const payload = { 
+      user: { 
+        id: user.id,
+        email: user.email,
+        role: user.role
+      } 
+    };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
       success: true,
-      message: 'Connexion réussie ',
-      token
+      message: 'Connexion réussie',
+      token,
+      user: {
+        id: user.id,
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        role: user.role,
+        grade: user.grade,
+        specialite: user.specialite,
+        formation: user.formation,
+        diplomes: user.diplomes,
+        actif: user.actif,
+        dateembauche: user.dateembauche
+      }
     });
   } catch (error) {
     console.error(error);
@@ -95,12 +122,35 @@ router.get('/me', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Récupérer l'utilisateur complet depuis la base de données
+    const user = await User.findById(decoded.user.id).select('-motdePasse');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Voici tes informations ',
-      user: { id: decoded.user.id }
+      message: 'Voici tes informations',
+      user: {
+        id: user.id,
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        role: user.role,
+        grade: user.grade,
+        specialite: user.specialite,
+        formation: user.formation,
+        diplomes: user.diplomes,
+        actif: user.actif,
+        dateembauche: user.dateembauche
+      }
     });
   } catch (error) {
+    console.error(error);
     res.status(401).json({
       success: false,
       message: 'Token invalide ou expiré '

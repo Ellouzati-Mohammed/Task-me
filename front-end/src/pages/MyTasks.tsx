@@ -8,26 +8,20 @@ import {
   XCircle,
   ArrowRightLeft
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHeader } from '../components/PageHeader';
+import { DelegateModal } from '../components/DelegateModal';
+import api from '../services/api';
 import '../Styles/Tasks.css';
-import type { Task, TaskStatus, StatusConfig, TypeLabels } from "../types/Dashboard.d";
+import type { Affectation, MyTaskStatus, MyTaskStatusConfig } from "../types/Affectation.d";
 
-const statusConfig: StatusConfig = {
+const statusConfig: MyTaskStatusConfig = {
   pending: { label: 'En attente', className: 'pending' },
   accepted: { label: 'Acceptée', className: 'accepted' },
   refused: { label: 'Refusée', className: 'refused' },
   delegated: { label: 'Déléguée', className: 'delegated' },
   completed: { label: 'Terminée', className: 'completed' },
-};
-
-const typeLabels: TypeLabels = {
-  formateur: 'Formateur',
-  membre_jury: 'Membre de jury',
-  beneficiaire_formation: 'Bénéficiaire',
-  observateur: 'Observateur',
-  concepteur_evaluation: 'Concepteur',
 };
 
 const statusFilters = [
@@ -39,83 +33,106 @@ const statusFilters = [
   { value: 'completed' as const, label: 'Terminées' },
 ];
 
-// Tâches assignées à l'utilisateur connecté
-const mockMyTasks: Task[] = [
-  {
-    id: '1',
-    name: 'Formation React Avancé',
-    description: 'Formation sur les concepts avancés de React incluant hooks personnalisés, performance et patterns de conception.',
-    status: 'accepted',
-    type: 'formateur',
-    startDate: '2024-02-15',
-    endDate: '2024-02-17',
-    direction: 'rabat_casa',
-    placesCount: 2,
-    isRemunerated: true
-  },
-  {
-    id: '2',
-    name: 'Audit Pédagogique Q1',
-    description: 'Audit trimestriel des programmes de formation et évaluation des résultats.',
-    status: 'accepted',
-    type: 'observateur',
-    startDate: '2024-02-20',
-    endDate: '2024-02-22',
-    direction: 'meknes_errachidia',
-    placesCount: 3,
-    isRemunerated: true
-  },
-  {
-    id: '3',
-    name: 'Jury Certification Développeur',
-    description: 'Participation au jury d\'évaluation pour la certification des développeurs web.',
-    status: 'pending',
-    type: 'membre_jury',
-    startDate: '2024-03-01',
-    endDate: '2024-03-01',
-    placesCount: 1,
-    isRemunerated: true
-  },
-  {
-    id: '4',
-    name: 'Formation Continue Formateurs',
-    description: 'Session de formation continue pour les formateurs sur les nouvelles méthodologies pédagogiques.',
-    status: 'completed',
-    type: 'formateur',
-    startDate: '2024-01-15',
-    endDate: '2024-01-18',
-    direction: 'meknes_errachidia',
-    placesCount: 2,
-    isRemunerated: true
-  }
-];
-
 export function MyTasks() {
   const { user } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | MyTaskStatus>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
+  const [tasks, setTasks] = useState<Affectation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showDelegateModal, setShowDelegateModal] = useState(false);
+  const [selectedAffectationId, setSelectedAffectationId] = useState<string | null>(null);
+  const [selectedTaskName, setSelectedTaskName] = useState<string>('');
 
-  const filteredTasks = mockMyTasks.filter(task => {
-    const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          task.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+  // Récupérer les tâches de l'utilisateur connecté
+  useEffect(() => {
+    const fetchMyTasks = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/affectations/my-tasks');
+        if (response.data.success) {
+          setTasks(response.data.data);
+        }
+      } catch (err) {
+        console.error('Erreur récupération tâches:', err);
+        setError('Erreur lors du chargement de vos tâches');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyTasks();
+  }, []);
+
+  const filteredTasks = tasks.filter(affectation => {
+    const task = affectation.tache;
+    if (!task) return false;
+    
+    const matchesSearch = task.nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Mapper le statut d'affectation au statut de tâche
+    let taskStatus: MyTaskStatus = 'pending';
+    if (affectation.statutAffectation === 'ACCEPTEE') taskStatus = 'accepted';
+    else if (affectation.statutAffectation === 'REFUSEE') taskStatus = 'refused';
+    else if (affectation.statutAffectation === 'DELEGUEE') taskStatus = 'delegated';
+    else if (task.statutTache === 'TERMINEE') taskStatus = 'completed';
+    
+    const matchesStatus = statusFilter === 'all' || taskStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleAccept = (taskId: string) => {
-    console.log('Accepter la tâche:', taskId);
-    // TODO: API call
+  const handleAccept = async (affectationId: string) => {
+    try {
+      await api.put(`/affectations/${affectationId}`, { statutAffectation: 'ACCEPTEE' });
+      // Recharger les tâches
+      const response = await api.get('/affectations/my-tasks');
+      if (response.data.success) {
+        setTasks(response.data.data);
+      }
+    } catch (err) {
+      console.error('Erreur acceptation tâche:', err);
+    }
   };
 
-  const handleRefuse = (taskId: string) => {
-    console.log('Refuser la tâche:', taskId);
-    // TODO: API call
+  const handleRefuse = async (affectationId: string) => {
+    const justificatif = prompt('Veuillez saisir la raison du refus:');
+    if (!justificatif) return;
+    
+    try {
+      await api.put(`/affectations/${affectationId}`, { 
+        statutAffectation: 'REFUSEE',
+        justificatif 
+      });
+      // Recharger les tâches
+      const response = await api.get('/affectations/my-tasks');
+      if (response.data.success) {
+        setTasks(response.data.data);
+      }
+    } catch (err) {
+      console.error('Erreur refus tâche:', err);
+    }
   };
 
-  const handleDelegate = (taskId: string) => {
-    console.log('Déléguer la tâche:', taskId);
-    // TODO: API call
+  const handleDelegate = async (affectationId: string, taskName: string) => {
+    setSelectedAffectationId(affectationId);
+    setSelectedTaskName(taskName);
+    setShowDelegateModal(true);
+  };
+
+  const handleCloseDelegateModal = () => {
+    setShowDelegateModal(false);
+    setSelectedAffectationId(null);
+    setSelectedTaskName('');
+  };
+
+  const handleDelegateSuccess = async () => {
+    // Recharger les tâches
+    const response = await api.get('/affectations/my-tasks');
+    if (response.data.success) {
+      setTasks(response.data.data);
+    }
   };
 
   return (
@@ -127,88 +144,114 @@ export function MyTasks() {
         onSearchChange={setSearchQuery}
         filters={statusFilters}
         activeFilter={statusFilter}
-        onFilterChange={(value) => setStatusFilter(value as 'all' | TaskStatus)}
+        onFilterChange={(value) => setStatusFilter(value as 'all' | MyTaskStatus)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onNewClick={() => {}}
         newButtonText=""
         resultsCount={filteredTasks.length}
-        getFilterCount={(value) => value === 'all' ? mockMyTasks.length : mockMyTasks.filter(t => t.status === value).length}
+        getFilterCount={(value) => value === 'all' ? tasks.length : tasks.filter(aff => {
+          let status: MyTaskStatus = 'pending';
+          if (aff.statutAffectation === 'ACCEPTEE') status = 'accepted';
+          else if (aff.statutAffectation === 'REFUSEE') status = 'refused';
+          else if (aff.statutAffectation === 'DELEGUEE') status = 'delegated';
+          else if (aff.tache?.statutTache === 'TERMINEE') status = 'completed';
+          return status === value;
+        }).length}
       />
 
-      {/* Task List */}
-      {filteredTasks.length > 0 ? (
+      {loading ? (
+        <div className="empty-state-card">
+          <p className="empty-state-text">Chargement de vos tâches...</p>
+        </div>
+      ) : error ? (
+        <div className="empty-state-card">
+          <p className="empty-state-text" style={{ color: '#c33' }}>{error}</p>
+        </div>
+      ) : filteredTasks.length > 0 ? (
         <div className={`tasks-container ${viewMode}`}>
-          {filteredTasks.map((task) => (
-            <div key={task.id} className="task-item-card">
-              <div className="task-item-header">
-                <div className="task-item-title-section">
-                  <h3 className="task-item-title">{task.name}</h3>
-                  <span className={`task-status-badge ${statusConfig[task.status].className}`}>
-                    {statusConfig[task.status].label}
-                  </span>
-                </div>
-                <div className="task-item-badges">
-                  <span className="task-type-badge-small">
-                    {typeLabels[task.type]}
-                  </span>
-                  {task.isRemunerated && (
-                    <span className="task-remunerated-badge-small">
-                      Rémunérée
+          {filteredTasks.map((affectation) => {
+            const task = affectation.tache;
+            if (!task) return null;
+            
+            // Déterminer le statut
+            let status: MyTaskStatus = 'pending';
+            if (affectation.statutAffectation === 'ACCEPTEE') status = 'accepted';
+            else if (affectation.statutAffectation === 'REFUSEE') status = 'refused';
+            else if (affectation.statutAffectation === 'DELEGUEE') status = 'delegated';
+            else if (task.statutTache === 'TERMINEE') status = 'completed';
+
+            return (
+              <div key={affectation._id} className="task-item-card">
+                <div className="task-item-header">
+                  <div className="task-item-title-section">
+                    <h3 className="task-item-title">{task.nom}</h3>
+                    <span className={`task-status-badge ${statusConfig[status].className}`}>
+                      {statusConfig[status].label}
                     </span>
-                  )}
-                  {task.status === 'pending' ? (
-                    <div className="task-action-buttons">
-                      <button 
-                        className="task-action-btn accept"
-                        onClick={() => handleAccept(task.id)}
-                        title="Accepter"
-                      >
-                        <CheckCircle size={18} />
-                      </button>
-                      <button 
-                        className="task-action-btn refuse"
-                        onClick={() => handleRefuse(task.id)}
-                        title="Refuser"
-                      >
-                        <XCircle size={18} />
-                      </button>
-                      <button 
-                        className="task-action-btn delegate"
-                        onClick={() => handleDelegate(task.id)}
-                        title="Déléguer"
-                      >
-                        <ArrowRightLeft size={18} />
-                      </button>
                     </div>
-                  ) : (
-                    <button className="task-menu-button">
-                      <MoreHorizontal size={18} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <p className="task-item-description">{task.description}</p>
-
-              <div className="task-item-meta">
-                <div className="task-meta-item">
-                  <Calendar size={14} />
-                  <span>{new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.endDate).toLocaleDateString('fr-FR')}</span>
-                </div>
-                {task.direction && (
-                  <div className="task-meta-item">
-                    <MapPin size={14} />
-                    <span>{task.direction.replace('_', ' - ')}</span>
+                  <div className="task-item-badges">
+                    <span className="task-type-badge-small">
+                      {task.typeTache || 'N/A'}
+                    </span>
+                    {task.remuneree && (
+                      <span className="task-remunerated-badge-small">
+                        Rémunérée
+                      </span>
+                    )}
+                    {status === 'pending' ? (
+                      <div className="task-action-buttons">
+                        <button 
+                          className="task-action-btn accept"
+                          onClick={() => handleAccept(affectation._id)}
+                          title="Accepter"
+                        >
+                          <CheckCircle size={18} />
+                        </button>
+                        <button 
+                          className="task-action-btn refuse"
+                          onClick={() => handleRefuse(affectation._id)}
+                          title="Refuser"
+                        >
+                          <XCircle size={18} />
+                        </button>
+                        <button 
+                          className="task-action-btn delegate"
+                          onClick={() => handleDelegate(affectation._id, task.nom)}
+                          title="Déléguer"
+                        >
+                          <ArrowRightLeft size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button className="task-menu-button">
+                        <MoreHorizontal size={18} />
+                      </button>
+                    )}
                   </div>
-                )}
-                <div className="task-meta-item">
-                  <Users size={14} />
-                  <span>{task.placesCount} place{task.placesCount > 1 ? 's' : ''}</span>
+                </div>
+
+                <p className="task-item-description">{task.description}</p>
+
+                <div className="task-item-meta">
+                  <div className="task-meta-item">
+                    <Calendar size={14} />
+                    <span>{new Date(task.dateDebut).toLocaleDateString('fr-FR')} - {new Date(task.dateFin).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  {task.directionAssociee && (
+                    <div className="task-meta-item">
+                      <MapPin size={14} />
+                      <span>{task.directionAssociee}</span>
+                    </div>
+                  )}
+                  <div className="task-meta-item">
+                    <Users size={14} />
+                    <span>{task.nombrePlaces} place{task.nombrePlaces > 1 ? 's' : ''}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="empty-state-card">
@@ -220,6 +263,16 @@ export function MyTasks() {
             Essayez de modifier vos critères de recherche
           </p>
         </div>
+      )}
+
+      {/* Modal de délégation */}
+      {showDelegateModal && selectedAffectationId && (
+        <DelegateModal 
+          affectationId={selectedAffectationId}
+          taskName={selectedTaskName}
+          onClose={handleCloseDelegateModal}
+          onSuccess={handleDelegateSuccess}
+        />
       )}
     </div>
   );
