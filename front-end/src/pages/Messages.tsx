@@ -1,7 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, MoreVertical, Send } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Messages.css';
+import api from '../services/api';
 import type { Conversation } from '../types/Message.d';
+
+interface ChatParticipant {
+  _id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: string;
+}
+
+interface ApiConversation {
+  _id: string;
+  participants: ChatParticipant[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 const mockConversations: Conversation[] = [
   {
@@ -84,19 +101,175 @@ const mockConversations: Conversation[] = [
 ];
 
 export function Messages() {
-  const [conversations] = useState<Conversation[]>(mockConversations);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(conversations[0]);
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageInput, setMessageInput] = useState('');
+
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  // Récupérer les messages quand une conversation est sélectionnée
+  useEffect(() => {
+    if (activeConversation) {
+      fetchMessages(activeConversation.id);
+    }
+  }, [activeConversation?.id]);
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/chats/my-conversations');
+      const apiConversations = response.data.data || [];
+      
+      // Mapper les conversations de l'API au format attendu
+      const mappedConversations: Conversation[] = apiConversations.map((conv: ApiConversation) => {
+        // Trouver l'autre participant (pas l'utilisateur connecté)
+        const otherParticipant = conv.participants.find(p => p._id !== user?.id);
+        
+        if (!otherParticipant) {
+          return null;
+        }
+        
+        const initials = `${otherParticipant.prenom.charAt(0)}${otherParticipant.nom.charAt(0)}`.toUpperCase();
+        const userName = `${otherParticipant.prenom} ${otherParticipant.nom}`;
+        
+        return {
+          id: conv._id,
+          userId: otherParticipant._id,
+          userName,
+          initials,
+          lastMessage: '',
+          timestamp: new Date(conv.updatedAt).toLocaleDateString('fr-FR'),
+          unreadCount: 0,
+          status: 'offline',
+          messages: []
+        };
+      }).filter(Boolean) as Conversation[];
+      
+      setConversations(mappedConversations);
+      
+      // Sélectionner la première conversation par défaut
+      if (mappedConversations.length > 0) {
+        setActiveConversation(mappedConversations[0]);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des conversations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (chatId: string) => {
+    try {
+      setLoadingMessages(true);
+      const response = await api.get(`/messages/conversation/${chatId}`);
+      const apiMessages = response.data.data || [];
+      
+      // Mapper les messages de l'API au format attendu
+      const mappedMessages = apiMessages.map((msg: any) => ({
+        id: msg._id,
+        senderId: msg.expediteur._id,
+        text: msg.contenu,
+        timestamp: new Date(msg.createdAt).toLocaleTimeString('fr-FR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        isOwn: msg.expediteur._id === user?.id
+      }));
+
+      // Mettre à jour la conversation active avec les messages
+      setActiveConversation(prev => {
+        if (prev && prev.id === chatId) {
+          return {
+            ...prev,
+            messages: mappedMessages
+          };
+        }
+        return prev;
+      });
+
+      // Mettre à jour aussi dans la liste des conversations
+      setConversations(prevConvs => 
+        prevConvs.map(conv => 
+          conv.id === chatId 
+            ? { 
+                ...conv, 
+                messages: mappedMessages,
+                lastMessage: mappedMessages.length > 0 
+                  ? mappedMessages[mappedMessages.length - 1].text 
+                  : ''
+              }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Erreur lors de la récupération des messages:', error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
 
   const filteredConversations = conversations.filter(conv =>
     conv.userName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      console.log('Sending message:', messageInput);
-      setMessageInput('');
+  const handleSendMessage = async () => {
+    if (messageInput.trim() && activeConversation) {
+      try {
+        const response = await api.post('/messages', {
+          contenu: messageInput.trim(),
+          conversation: activeConversation.id
+        });
+
+        const newMessage = response.data.data;
+        
+        // Mapper le nouveau message au format local
+        const mappedMessage = {
+          id: newMessage._id,
+          senderId: newMessage.expediteur._id,
+          text: newMessage.contenu,
+          timestamp: new Date(newMessage.createdAt).toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          isOwn: true
+        };
+
+        // Ajouter le message à la conversation active
+        setActiveConversation(prev => {
+          if (prev) {
+            return {
+              ...prev,
+              messages: [...prev.messages, mappedMessage],
+              lastMessage: mappedMessage.text
+            };
+          }
+          return prev;
+        });
+
+        // Mettre à jour aussi dans la liste des conversations
+        setConversations(prevConvs => 
+          prevConvs.map(conv => 
+            conv.id === activeConversation.id 
+              ? { 
+                  ...conv, 
+                  messages: [...conv.messages, mappedMessage],
+                  lastMessage: mappedMessage.text,
+                  timestamp: 'Maintenant'
+                }
+              : conv
+          )
+        );
+
+        setMessageInput('');
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi du message:', error);
+      }
     }
   };
 
@@ -121,8 +294,21 @@ export function Messages() {
           />
         </div>
 
-        <div className="conversations-list">
-          {filteredConversations.map((conversation) => (
+        {loading ? (
+          <div className="conversations-list">
+            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+              Chargement des conversations...
+            </div>
+          </div>
+        ) : conversations.length === 0 ? (
+          <div className="conversations-list">
+            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+              Aucune conversation
+            </div>
+          </div>
+        ) : (
+          <div className="conversations-list">
+            {filteredConversations.map((conversation) => (
             <div
               key={conversation.id}
               className={`conversation-item ${activeConversation?.id === conversation.id ? 'active' : ''}`}
@@ -150,6 +336,7 @@ export function Messages() {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Chat Area */}
@@ -172,17 +359,39 @@ export function Messages() {
             </div>
 
             <div className="chat-messages">
-              {activeConversation.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message ${message.isOwn ? 'own' : 'other'}`}
-                >
-                  <div className="message-bubble">
-                    <p className="message-text">{message.text}</p>
-                    <span className="message-time">{message.timestamp}</span>
-                  </div>
+              {loadingMessages ? (
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center', 
+                  height: '100%',
+                  color: '#64748b' 
+                }}>
+                  Chargement des messages...
                 </div>
-              ))}
+              ) : activeConversation.messages.length === 0 ? (
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center', 
+                  height: '100%',
+                  color: '#64748b' 
+                }}>
+                  Aucun message. Commencez la conversation!
+                </div>
+              ) : (
+                activeConversation.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`message ${message.isOwn ? 'own' : 'other'}`}
+                  >
+                    <div className="message-bubble">
+                      <p className="message-text">{message.text}</p>
+                      <span className="message-time">{message.timestamp}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="chat-input-area">

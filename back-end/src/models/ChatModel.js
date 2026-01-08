@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 
 const chatSchema = new Schema({
     participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    titre:{ type: String, required: true },
+    titre:{ type: String, required: false },
     conversation:{type:String, enum: ['GoupeTACHE', 'PRIVE'], default:'PRIVE'},
     DateCreation: { type: Date, default: Date.now }});
     

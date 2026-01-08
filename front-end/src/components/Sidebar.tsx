@@ -3,6 +3,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   Users,
+  UserCheck,
   Car,
   Bell,
   MessageSquare,
@@ -22,9 +23,10 @@ const navItems = [
   { icon: ClipboardList, label: 'Tâches', href: '/tasks', roles: ['admin', 'coordinateur'] },
   { icon: ClipboardCheck, label: 'Mes tâches', href: '/my-tasks', roles: ['auditeur'] },
   { icon: Users, label: 'Utilisateurs', href: '/users', roles: ['admin', 'coordinateur'] },
+  { icon: UserCheck, label: 'Auditeurs', href: '/auditeurs', roles: ['admin', 'coordinateur'] },
   { icon: Car, label: 'Véhicules', href: '/vehicles', roles: ['admin', 'coordinateur'] },
   { icon: Bell, label: 'Notifications', href: '/notifications', roles: [] },
-  { icon: MessageSquare, label: 'Messages', href: '/messages', roles: [] },
+  { icon: MessageSquare, label: 'Messages', href: '/messages', roles: ['admin', 'coordinateur', 'auditeur'] },
   { icon: UserCircle, label: 'Profil', href: '/profile', roles: ['admin', 'coordinateur', 'auditeur'] },
 ];
 

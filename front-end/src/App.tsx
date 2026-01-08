@@ -9,6 +9,7 @@ import { AuditorDashboard } from './pages/AuditorDashboard'
 import { Tasks } from './pages/Tasks'
 import { MyTasks } from './pages/MyTasks'
 import { Users } from './pages/Users'
+import { Auditeurs } from './pages/Auditeurs'
 import { Vehicles } from './pages/Vehicles'
 import { Notifications } from './pages/Notifications'
 import { Messages } from './pages/Messages'
@@ -115,6 +116,11 @@ function App() {
                     <Route path="/users" element={
                       <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
                         <Users />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/auditeurs" element={
+                      <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
+                        <Auditeurs />
                       </ProtectedRoute>
                     } />
                     <Route path="/vehicles" element={
