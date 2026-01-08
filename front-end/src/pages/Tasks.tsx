@@ -69,6 +69,19 @@ const mapTypeTacheToType = (typeTache: string): TaskType => {
   return mapping[typeTache] || 'formateur';
 };
 
+// Fonction inverse pour envoyer à l'API
+const mapStatusToStatut = (status: TaskStatus): string => {
+  const mapping: Record<TaskStatus, string> = {
+    'pending': 'CREEE',
+    'affectation': 'EN_AFFECTATION',
+    'affectee': 'COMPLETEE_AFFECTEE',
+    'encours': 'EN_COURS',
+    'completed': 'TERMINEE',
+    'cancelled': 'ANNULEE'
+  };
+  return mapping[status];
+};
+
 export function Tasks() {
   const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -88,7 +101,7 @@ export function Tasks() {
     const fetchTasks = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/tasks');
+        const response = await api.get('/tasks/my-tasks');
         const apiTasks = response.data.data || response.data;
         
         // Mapper les données de l'API au format attendu
@@ -193,6 +206,23 @@ export function Tasks() {
   const handleCloseDetailModal = () => {
     setShowDetailModal(false);
     setSelectedTaskForDetail(null);
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      const statutTache = mapStatusToStatut(newStatus);
+      await api.patch(`/tasks/${taskId}/status`, { statutTache });
+      
+      // Mettre à jour localement
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? { ...task, status: newStatus } : task
+        )
+      );
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+      alert('Erreur lors du changement de statut de la tâche');
+    }
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -303,20 +333,44 @@ export function Tasks() {
 
               <p className="task-item-description">{task.description}</p>
 
-              <div className="task-item-meta">
-                <div className="task-meta-item">
-                  <Calendar size={14} />
-                  <span>{new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.endDate).toLocaleDateString('fr-FR')}</span>
-                </div>
-                {task.direction && (
+              <div className="task-item-footer">
+                <div className="task-item-meta">
                   <div className="task-meta-item">
-                    <MapPin size={14} />
-                    <span>{task.direction.replace('_', ' - ')}</span>
+                    <Calendar size={14} />
+                    <span>{new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.endDate).toLocaleDateString('fr-FR')}</span>
                   </div>
-                )}
-                <div className="task-meta-item">
-                  <Users size={14} />
-                  <span>{task.placesCount} place{task.placesCount > 1 ? 's' : ''}</span>
+                  {task.direction && (
+                    <div className="task-meta-item">
+                      <MapPin size={14} />
+                      <span>{task.direction.replace('_', ' - ')}</span>
+                    </div>
+                  )}
+                  <div className="task-meta-item">
+                    <Users size={14} />
+                    <span>{task.placesCount} place{task.placesCount > 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                
+                <div className="task-status-select-wrapper">
+                  <select
+                    className="task-status-select"
+                    value=""
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      if (e.target.value) {
+                        handleStatusChange(task.id, e.target.value as TaskStatus);
+                      }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value="" disabled>Changer statut</option>
+                    <option value="pending">Créée</option>
+                    <option value="affectation">En affectation</option>
+                    <option value="affectee">Complétée/Affectée</option>
+                    <option value="encours">En cours</option>
+                    <option value="completed">Terminée</option>
+                    <option value="cancelled">Annulée</option>
+                  </select>
                 </div>
               </div>
             </div>

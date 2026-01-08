@@ -77,51 +77,12 @@ export function Vehicles() {
     return matchesSearch && matchesDirection;
   });
 
-  const getTotalVehicles = () => vehicles.length;
   const getVehiclesByDirection = (direction: string) => 
     vehicles.filter(v => v.direction === direction).length;
 
   return (
     <div className="vehicles-page">
-      {/* Stats Cards */}
-      <div className="vehicles-stats">
-        <div className="vehicle-stat-card">
-          <div className="stat-content">
-            <p className="stat-label">Total véhicules</p>
-            <p className="stat-value">{getTotalVehicles()}</p>
-          </div>
-          <div className="stat-icon gray">
-            <Car size={20} />
-          </div>
-        </div>
-        <div className="vehicle-stat-card">
-          <div className="stat-content">
-            <p className="stat-label">Rabat-Casa</p>
-            <p className="stat-value green">{getVehiclesByDirection('Rabat-Casa')}</p>
-          </div>
-          <div className="stat-icon green">
-            <MapPin size={20} />
-          </div>
-        </div>
-        <div className="vehicle-stat-card">
-          <div className="stat-content">
-            <p className="stat-label">Meknès-Errachidia</p>
-            <p className="stat-value orange">{getVehiclesByDirection('Meknès-Errachidia')}</p>
-          </div>
-          <div className="stat-icon orange">
-            <MapPin size={20} />
-          </div>
-        </div>
-        <div className="vehicle-stat-card">
-          <div className="stat-content">
-            <p className="stat-label">Marrakech-Agadir</p>
-            <p className="stat-value blue">{getVehiclesByDirection('Marrakech-Agadir')}</p>
-          </div>
-          <div className="stat-icon blue">
-            <MapPin size={20} />
-          </div>
-        </div>
-      </div>
+      
 
       <PageHeader
         title="Gestion des véhicules"

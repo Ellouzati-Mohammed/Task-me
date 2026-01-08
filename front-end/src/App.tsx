@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Sidebar } from './components/Sidebar'
 import { Navbar } from './components/Navbar'
 import { Dashboard } from './pages/Dashboard'
+import { AuditorDashboard } from './pages/AuditorDashboard'
 import { Tasks } from './pages/Tasks'
 import { MyTasks } from './pages/MyTasks'
 import { Users } from './pages/Users'
@@ -67,7 +68,11 @@ function ProtectedRoute({ children, allowedRoles }: { children: ReactNode; allow
   }
   
   if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/my-tasks" replace />;
+    // Rediriger vers la page appropriée selon le rôle
+    if (user?.role === 'auditeur') {
+      return <Navigate to="/auditor-dashboard" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
   }
   
   return <>{children}</>;
@@ -88,8 +93,13 @@ function App() {
                   <Navbar title="Tableau de bord" />
                   <Routes>
                     <Route path="/dashboard" element={
-                      <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
+                      <ProtectedRoute allowedRoles={['admin']}>
                         <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/auditor-dashboard" element={
+                      <ProtectedRoute allowedRoles={['auditeur']}>
+                        <AuditorDashboard />
                       </ProtectedRoute>
                     } />
                     <Route path="/tasks" element={

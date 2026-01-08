@@ -17,13 +17,14 @@ import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Sidebar.css';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard', roles: ['admin', 'coordinateur'] },
+  { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard', roles: ['admin'] },
+  { icon: LayoutDashboard, label: 'Mon tableau de bord', href: '/auditor-dashboard', roles: ['auditeur'] },
   { icon: ClipboardList, label: 'Tâches', href: '/tasks', roles: ['admin', 'coordinateur'] },
   { icon: ClipboardCheck, label: 'Mes tâches', href: '/my-tasks', roles: ['auditeur'] },
   { icon: Users, label: 'Utilisateurs', href: '/users', roles: ['admin', 'coordinateur'] },
   { icon: Car, label: 'Véhicules', href: '/vehicles', roles: ['admin', 'coordinateur'] },
-  { icon: Bell, label: 'Notifications', href: '/notifications', roles: ['admin', 'coordinateur', 'auditeur'] },
-  { icon: MessageSquare, label: 'Messages', href: '/messages', roles: ['admin', 'coordinateur', 'auditeur'] },
+  { icon: Bell, label: 'Notifications', href: '/notifications', roles: [] },
+  { icon: MessageSquare, label: 'Messages', href: '/messages', roles: [] },
   { icon: UserCircle, label: 'Profil', href: '/profile', roles: ['admin', 'coordinateur', 'auditeur'] },
 ];
 

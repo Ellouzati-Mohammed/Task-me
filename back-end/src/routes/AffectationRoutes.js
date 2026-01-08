@@ -43,6 +43,50 @@ router.get('/my-tasks', authMiddleware, async (req, res) => {
   }
 });
 
+// Récupérer les statistiques de l'auditeur connecté
+router.get('/my-stats', authMiddleware, async (req, res) => {
+  try {
+    const totalAffectations = await Affectation.countDocuments({ 
+      auditeur: req.user._id 
+    });
+    
+    const acceptedTasks = await Affectation.countDocuments({ 
+      auditeur: req.user._id,
+      statutAffectation: 'ACCEPTEE'
+    });
+    
+    const refusedTasks = await Affectation.countDocuments({ 
+      auditeur: req.user._id,
+      statutAffectation: 'REFUSEE'
+    });
+    
+    const delegatedTasks = await Affectation.countDocuments({ 
+      auditeur: req.user._id,
+      statutAffectation: 'DELEGUEE'
+    });
+    
+    const pendingTasks = await Affectation.countDocuments({ 
+      auditeur: req.user._id,
+      statutAffectation: 'PROPOSEE'
+    });
+    
+    res.json({ 
+      success: true, 
+      data: {
+        totalAffectations,
+        acceptedTasks,
+        refusedTasks,
+        delegatedTasks,
+        pendingTasks,
+        completedTasks: 0 // Peut être ajouté plus tard
+      }
+    });
+  } catch (error) {
+    console.error('Erreur récupération statistiques auditeur:', error);
+    res.status(500).json({ success: false, message: 'Erreur récupération de vos statistiques' });
+  }
+});
+
 // Récupérer les 5 dernières affectations pour l'activité récente
 router.get('/recent', async (req, res) => {
   try {

@@ -33,7 +33,9 @@ const taskSchema = new Schema({
     urgent: { type: Boolean, default: false },
     coordinateur: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     conversation: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation" }
-  }); 
+  },
+  { timestamps: true }
+); 
    
   const Task = mongoose.model('Task', taskSchema); 
   module.exports = Task;    

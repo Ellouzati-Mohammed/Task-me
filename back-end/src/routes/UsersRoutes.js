@@ -6,6 +6,15 @@ const { authMiddleware, isAdmin } = require('../middlewares/auth.middleware');
 // Créer un utilisateur (admin seulement)
 router.post('/', authMiddleware, isAdmin, async (req, res) => {
   try {
+    // Vérifier si l'email existe déjà
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cet email est déjà utilisé' 
+      });
+    }
+    
     // Mapper dateInscription vers dateembauche si présent
     const userData = { ...req.body };
     if (userData.dateInscription) {
@@ -18,7 +27,22 @@ router.post('/', authMiddleware, isAdmin, async (req, res) => {
     await user.save();
     res.status(201).json({ success: true, data: user });
   } catch (error) {
-    console.log(error)
+    console.log(error);
+    // Vérifier si c'est une erreur de validation MongoDB
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(', ') 
+      });
+    }
+    // Vérifier si c'est une erreur de duplicata (email unique)
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cet email est déjà utilisé' 
+      });
+    }
     res.status(500).json({ success: false, message: 'Erreur création utilisateur' });
   }
 });
@@ -43,6 +67,80 @@ router.get('/auditeurs/list', authMiddleware, async (req, res) => {
   }
 });
 
+// Récupérer les statistiques de l'utilisateur connecté
+router.get('/me/stats', authMiddleware, async (req, res) => {
+  try {
+    const Affectation = require('../models/AffectationModel');
+    const Task = require('../models/TaskModel');
+    
+    let stats = {};
+    
+    // Statistiques selon le rôle
+    if (req.user.role === 'auditeur') {
+      // Statistiques pour les auditeurs
+      const totalAffectations = await Affectation.countDocuments({ 
+        auditeur: req.user._id 
+      });
+      
+      const acceptedTasks = await Affectation.countDocuments({ 
+        auditeur: req.user._id,
+        statutAffectation: 'ACCEPTEE'
+      });
+      
+      const refusedTasks = await Affectation.countDocuments({ 
+        auditeur: req.user._id,
+        statutAffectation: 'REFUSEE'
+      });
+      
+      const delegatedTasks = await Affectation.countDocuments({ 
+        auditeur: req.user._id,
+        statutAffectation: 'DELEGUEE'
+      });
+      
+      const pendingTasks = await Affectation.countDocuments({ 
+        auditeur: req.user._id,
+        statutAffectation: 'PROPOSEE'
+      });
+      
+      stats = {
+        totalAffectations,
+        acceptedTasks,
+        refusedTasks,
+        delegatedTasks,
+        pendingTasks,
+        completedTasks: 0
+      };
+    } else if (req.user.role === 'coordinateur' || req.user.role === 'admin') {
+      // Statistiques pour les coordinateurs et admins
+      const totalTasks = await Task.countDocuments({ coordinateur: req.user._id });
+      const pendingTasks = await Task.countDocuments({ 
+        coordinateur: req.user._id,
+        statutTache: { $in: ['CREEE', 'EN_AFFECTATION'] } 
+      });
+      const completedTasks = await Task.countDocuments({ 
+        coordinateur: req.user._id,
+        statutTache: 'TERMINEE' 
+      });
+      const inProgressTasks = await Task.countDocuments({ 
+        coordinateur: req.user._id,
+        statutTache: 'EN_COURS' 
+      });
+      
+      stats = {
+        totalTasks,
+        pendingTasks,
+        completedTasks,
+        inProgressTasks
+      };
+    }
+    
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Erreur récupération statistiques utilisateur:', error);
+    res.status(500).json({ success: false, message: 'Erreur récupération de vos statistiques' });
+  }
+});
+
 // Récupérer un utilisateur par ID (authentification requise)
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
@@ -57,10 +155,40 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // Mettre à jour un utilisateur (admin seulement)
 router.put('/:id', authMiddleware, isAdmin, async (req, res) => {
   try {
+    // Vérifier si l'email est déjà utilisé par un autre utilisateur
+    if (req.body.email) {
+      const existingUser = await User.findOne({ 
+        email: req.body.email,
+        _id: { $ne: req.params.id }
+      });
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Cet email est déjà utilisé' 
+        });
+      }
+    }
+    
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedUser) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
     res.json({ success: true, data: updatedUser });
   } catch (error) {
+    console.log(error);
+    // Vérifier si c'est une erreur de validation MongoDB
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(', ') 
+      });
+    }
+    // Vérifier si c'est une erreur de duplicata
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cet email est déjà utilisé' 
+      });
+    }
     res.status(500).json({ success: false, message: 'Erreur mise à jour utilisateur' });
   }
 });

@@ -271,6 +271,30 @@
   white-space: nowrap;
 }
 
+/* Select pour le statut de tâche */
+.task-status-select {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.task-status-select:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.task-status-select:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
 /* Statuts de tâches */
 .task-status-badge.pending {
   background-color: #fef3c7;
@@ -371,10 +395,23 @@
   margin-bottom: 16px;
 }
 
+.task-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
 .task-item-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+  flex: 1;
+}
+
+.task-status-select-wrapper {
+  display: flex;
+  align-items: center;
 }
 
 .task-meta-item {

@@ -5,7 +5,6 @@ import {
   CheckCircle, 
   XCircle, 
   ArrowRightLeft, 
-  User,
   Calendar,
   MapPin,
   Users,
@@ -19,7 +18,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import '../Styles/Dashboard.css';
-import type { StatCardProps,ActivityItem,Task,StatusConfig,TypeLabels } from "../types/Dashboard.d";
+import type { StatCardProps, Task } from "../types/Dashboard.d";
 
 interface RecentAffectation {
   id: string;
@@ -27,6 +26,24 @@ interface RecentAffectation {
   taskName: string;
   status: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
   date: string;
+}
+
+interface TaskWithTimestamp extends Task {
+  createdAt: string;
+}
+
+interface ApiAffectation {
+  _id: string;
+  auditeur?: {
+    prenom: string;
+    nom: string;
+  };
+  tache?: {
+    nom: string;
+  };
+  statutAffectation: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 // Mapping des statuts API vers les classes CSS
@@ -53,14 +70,6 @@ const getStatusLabel = (statut: string): string => {
     'ANNULEE': 'Annulée'
   };
   return mapping[statut] || statut;
-};
-
-const activityConfig = {
-  accepted: { icon: CheckCircle, color: 'success', label: 'a accepté' },
-  refused: { icon: XCircle, color: 'destructive', label: 'a refusé' },
-  delegated: { icon: ArrowRightLeft, color: 'delegated', label: 'a délégué' },
-  created: { icon: Clock, color: 'info', label: 'a créé' },
-  assigned: { icon: User, color: 'accent', label: 'a été assigné à' },
 };
 
 function StatCard({ 
@@ -176,52 +185,49 @@ function TaskList({ tasks }: TaskListProps) {
       {tasks.map((task, index) => (
         <div
           key={task.id}
-          className="task-card card-hover animate-slide-up"
+          className="task-item-card card-hover animate-slide-up"
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          <div className="task-card-inner">
-            <div className="task-main">
-              <div className="task-header">
-                <h3 className="task-name">{task.name}</h3>
-                <span className={`task-badge ${getStatusClass(task.status)}`}>
-                  {getStatusLabel(task.status)}
-                </span>
-              </div>
-              
-              <p className="task-description">
-                {task.description}
-              </p>
-
-              <div className="task-meta">
-                <span className="task-meta-item">
-                  <Calendar size={14} />
-                  {new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.endDate).toLocaleDateString('fr-FR')}
-                </span>
-                {task.direction && (
-                  <span className="task-meta-item">
-                    <MapPin size={14} />
-                    {task.direction.replace('_', ' - ')}
-                  </span>
-                )}
-                <span className="task-meta-item">
-                  <Users size={14} />
-                  {task.placesCount} place{task.placesCount > 1 ? 's' : ''}
-                </span>
-              </div>
+          <div className="task-item-header">
+            <div className="task-item-title-section">
+              <h3 className="task-item-title">{task.name}</h3>
+              <span className={`task-status-badge ${getStatusClass(task.status)}`}>
+                {getStatusLabel(task.status)}
+              </span>
             </div>
-
-            <div className="task-actions">
-              <span className="task-type-badge">
+            <div className="task-item-badges">
+              <span className="task-type-badge-small">
                 {task.type}
               </span>
               {task.isRemunerated && (
-                <span className="task-remunerated-badge">
+                <span className="task-remunerated-badge-small">
                   Rémunérée
                 </span>
               )}
-              <button className="task-menu-btn">
-                <MoreHorizontal size={16} />
+              <button className="task-menu-button">
+                <MoreHorizontal size={18} />
               </button>
+            </div>
+          </div>
+          
+          <p className="task-item-description">
+            {task.description}
+          </p>
+
+          <div className="task-item-meta">
+            <div className="task-meta-item">
+              <Calendar size={14} />
+              <span>{new Date(task.startDate).toLocaleDateString('fr-FR')} - {new Date(task.endDate).toLocaleDateString('fr-FR')}</span>
+            </div>
+            {task.direction && (
+              <div className="task-meta-item">
+                <MapPin size={14} />
+                <span>{task.direction.replace('_', ' - ')}</span>
+              </div>
+            )}
+            <div className="task-meta-item">
+              <Users size={14} />
+              <span>{task.placesCount} place{task.placesCount > 1 ? 's' : ''}</span>
             </div>
           </div>
         </div>
@@ -261,19 +267,22 @@ export function Dashboard() {
         const tasksResponse = await api.get('/tasks');
         const apiTasks = tasksResponse.data.data || tasksResponse.data;
         
-        // Mapper les tâches
-        const mappedTasks = apiTasks.map((task: Record<string, unknown>) => ({
-          id: task._id as string,
-          name: task.nom as string,
-          description: task.description as string,
-          status: task.statutTache as string,
-          type: task.typeTache as string,
-          startDate: task.dateDebut as string,
-          endDate: task.dateFin as string,
-          direction: task.directionAssociee as string,
-          placesCount: task.nombrePlaces as number,
-          isRemunerated: task.remuneree as boolean
-        }));
+        // Mapper les tâches et trier par date de création (plus récent en premier)
+        const mappedTasks = apiTasks
+          .map((task: Record<string, unknown>) => ({
+            id: task._id as string,
+            name: task.nom as string,
+            description: task.description as string,
+            status: task.statutTache as string,
+            type: task.typeTache as string,
+            startDate: task.dateDebut as string,
+            endDate: task.dateFin as string,
+            direction: task.directionAssociee as string,
+            placesCount: task.nombrePlaces as number,
+            isRemunerated: task.remuneree as boolean,
+            createdAt: task.createdAt as string
+          }))
+          .sort((a: TaskWithTimestamp, b: TaskWithTimestamp) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
         // Prendre les 5 tâches les plus récentes
         const recentTasks = mappedTasks.slice(0, 5);
@@ -287,8 +296,8 @@ export function Dashboard() {
         
         // Mapper les affectations (même si tache est null)
         const mappedAffectations = apiAffectations
-          .filter((aff: any) => aff.auditeur) // Filtrer seulement si auditeur existe
-          .map((aff: any) => ({
+          .filter((aff: ApiAffectation) => aff.auditeur) // Filtrer seulement si auditeur existe
+          .map((aff: ApiAffectation) => ({
             id: aff._id,
             userName: `${aff.auditeur.prenom} ${aff.auditeur.nom}`,
             taskName: aff.tache?.nom || 'Tâche supprimée',

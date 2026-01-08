@@ -51,6 +51,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
   } : { ...initialFormData, role: userType };
   
   const [formData, setFormData] = useState<UserFormData>(initialData);
+  const [error, setError] = useState<string>('');
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {
@@ -63,15 +64,23 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
 
    const addUser = async () =>{
     try {
+        setError('');
         const res = await api.post("/users/", formData);
         console.log(res);
-    } catch (err) {
+        return true;
+    } catch (err: unknown) {
         console.error(err);
+        const errorMessage = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
+          ? String(err.response.data.message)
+          : 'Erreur lors de la création de l\'utilisateur';
+        setError(errorMessage);
+        return false;
     }
    };
 
    const updateUser = async () => {
     try {
+        setError('');
         // Préparer les données pour le backend
         const dataToSend: Partial<User> = {
           nom: formData.nom,
@@ -97,20 +106,29 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
 
         const res = await api.put(`/users/${user?._id}`, dataToSend);
         console.log(res);
-    } catch (err) {
+        return true;
+    } catch (err: unknown) {
         console.error(err);
+        const errorMessage = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
+          ? String(err.response.data.message)
+          : 'Erreur lors de la modification de l\'utilisateur';
+        setError(errorMessage);
+        return false;
     }
    };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let success = false;
     if (mode === 'create') {
-      addUser();
+      success = await addUser();
     } else {
-      updateUser();
+      success = await updateUser();
     }
-    onClose();
+    if (success) {
+      onClose();
+    }
   };
 
   const handleCancel = () => {
@@ -144,6 +162,21 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
         </div>
 
         <form id="user-form" onSubmit={handleSubmit} className="user-form">
+          {/* Message d'erreur */}
+          {error && (
+            <div className="error-message" style={{
+              padding: '12px',
+              backgroundColor: '#fee2e2',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              color: '#dc2626',
+              marginBottom: '20px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
           {/* Type d'utilisateur (seulement en mode création) */}
           {mode === 'create' && (
             <div className="form-section">
