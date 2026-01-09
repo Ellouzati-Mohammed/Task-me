@@ -62,7 +62,7 @@ const usersData = [
 ];
 
 // Connexion MongoDB
-mongoose.connect('mongodb+srv://ifdili_db_user:imanefd@cluster0.uugwydp.mongodb.net/TaskMe?retryWrites=true&w=majority')
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('Connexion à MongoDB établie.');
     console.log('Nettoyage de la collection users...');
