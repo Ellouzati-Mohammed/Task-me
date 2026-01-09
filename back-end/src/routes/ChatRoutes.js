@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Chat = require('../models/ChatModel');
+const Task = require('../models/TaskModel');
+const Affectation = require('../models/AffectationModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 
 // Récupérer tous les Chats d'une conversation
@@ -73,6 +75,90 @@ router.post('/', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erreur création chat détaillée:', error);
     res.status(500).json({ success: false, message: 'Erreur création Chat', error: error.message });
+  }
+});
+
+// Créer une conversation de groupe pour une tâche
+router.post('/task-conversation', authMiddleware, async (req, res) => {
+  try {
+    const { taskId } = req.body;
+    
+    if (!taskId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'L\'ID de la tâche est requis' 
+      });
+    }
+    
+    // Récupérer la tâche
+    const task = await Task.findById(taskId).populate('coordinateur', 'nom prenom');
+    if (!task) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Tâche introuvable' 
+      });
+    }
+    
+    // Vérifier si une conversation existe déjà pour cette tâche
+    const existingChat = await Chat.findOne({ tache: taskId })
+      .populate('participants', 'nom prenom email role')
+      .populate('tache', 'nom');
+    
+    if (existingChat) {
+      return res.json({ 
+        success: true, 
+        data: existingChat,
+        message: 'Conversation de groupe déjà existante pour cette tâche' 
+      });
+    }
+    
+    // Récupérer tous les auditeurs affectés à cette tâche
+    const affectations = await Affectation.find({ 
+      tache: taskId,
+      statutAffectation: { $in: ['EN_ATTENTE', 'ACCEPTEE'] }
+    }).populate('auditeur');
+    
+    // Créer la liste des participants (coordinateur + utilisateur connecté + auditeurs affectés)
+    const participantsSet = new Set();
+    
+    // Ajouter le coordinateur
+    participantsSet.add(task.coordinateur._id.toString());
+    
+    // Ajouter l'utilisateur connecté
+    participantsSet.add(req.user._id.toString());
+    
+    // Ajouter tous les auditeurs affectés
+    affectations.forEach(aff => {
+      if (aff.auditeur) {
+        participantsSet.add(aff.auditeur._id.toString());
+      }
+    });
+    
+    // Convertir le Set en tableau
+    const participants = Array.from(participantsSet);
+    
+    // Créer la conversation de groupe
+    const newChat = new Chat({
+      participants: participants,
+      titre: `Tâche: ${task.nom}`,
+      conversation: 'GoupeTACHE',
+      tache: taskId
+    });
+    
+    await newChat.save();
+    
+    // Populate avant de retourner
+    await newChat.populate('participants', 'nom prenom email role');
+    await newChat.populate('tache', 'nom');
+    
+    res.status(201).json({ success: true, data: newChat });
+  } catch (error) {
+    console.error('Erreur création conversation de groupe:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur création de la conversation de groupe', 
+      error: error.message 
+    });
   }
 });
 

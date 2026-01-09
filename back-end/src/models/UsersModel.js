@@ -9,7 +9,7 @@ const userSchema = new Schema({
     email: { type: String, required: true, unique: true },
     motdePasse: { type: String, required: true },   
     grade: { type: String, enum: ['',"A", "B", "C"] }, 
-    specialite: { type: String, enum:['','pedagogique', 'orientation', 'planification', 'financier'] }, 
+    specialite: { type: String, enum:['','pedagogique', 'orientation', 'planification', 'services_financiers'] }, 
     formation: { type: String }, 
     diplomes: { type: String }, 
     actif: { type: Boolean, default: true }, 

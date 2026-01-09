@@ -6,9 +6,11 @@ import {
   Filter,
   CheckCircle,
   XCircle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  MessageSquare
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { PageHeader } from '../components/PageHeader';
 import { DelegateModal } from '../components/DelegateModal';
@@ -36,6 +38,7 @@ const statusFilters = [
 
 export function MyTasks() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<'all' | MyTaskStatus>('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +51,7 @@ export function MyTasks() {
   const [showRefuseModal, setShowRefuseModal] = useState(false);
   const [selectedAffectationForRefuse, setSelectedAffectationForRefuse] = useState<string | null>(null);
   const [selectedTaskNameForRefuse, setSelectedTaskNameForRefuse] = useState<string>('');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Récupérer les tâches de l'utilisateur connecté
   useEffect(() => {
@@ -137,6 +141,18 @@ export function MyTasks() {
     const response = await api.get('/affectations/my-tasks');
     if (response.data.success) {
       setTasks(response.data.data);
+    }
+  };
+
+  const handleCreateTaskConversation = async (taskId: string) => {
+    try {
+      const response = await api.post('/chats/task-conversation', { taskId });
+      if (response.data.success) {
+        // Rediriger vers la page de messages
+        navigate('/messages');
+      }
+    } catch (error) {
+      console.error('Erreur création conversation de groupe:', error);
     }
   };
 
@@ -231,9 +247,28 @@ export function MyTasks() {
                         )}
                       </div>
                     ) : (
-                      <button className="task-menu-button">
-                        <MoreHorizontal size={18} />
-                      </button>
+                      <div style={{ position: 'relative' }}>
+                        <button 
+                          className="task-menu-button"
+                          onClick={() => setOpenMenuId(openMenuId === affectation._id ? null : affectation._id)}
+                        >
+                          <MoreHorizontal size={18} />
+                        </button>
+                        {openMenuId === affectation._id && (
+                          <div className="task-menu-dropdown">
+                            <button 
+                              className="task-menu-item"
+                              onClick={() => {
+                                handleCreateTaskConversation(task._id);
+                                setOpenMenuId(null);
+                              }}
+                            >
+                              <MessageSquare size={16} />
+                              Créer conversation
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

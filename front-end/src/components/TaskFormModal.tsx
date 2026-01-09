@@ -77,6 +77,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
   const [formData, setFormData] = useState<TaskFormData>(getInitialFormData());
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [errors, setErrors] = useState<{ grades?: string; specialites?: string }>({});
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {
@@ -120,6 +121,25 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation : au moins un grade et une spécialité
+    const newErrors: { grades?: string; specialites?: string } = {};
+    
+    if (formData.grades.length === 0) {
+      newErrors.grades = 'Veuillez sélectionner au moins un grade';
+    }
+    
+    if (formData.specialites.length === 0) {
+      newErrors.specialites = 'Veuillez sélectionner au moins une spécialité';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    // Réinitialiser les erreurs si tout est valide
+    setErrors({});
+    
     try {
       // Préparer les données à envoyer en mappant vehiculeId vers vehicule
       const { vehiculeId, ...restData } = formData;
@@ -154,6 +174,10 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
         ? prev.specialites.filter(s => s !== specialite)
         : [...prev.specialites, specialite]
     }));
+    // Effacer l'erreur quand l'utilisateur sélectionne une spécialité
+    if (errors.specialites) {
+      setErrors(prev => ({ ...prev, specialites: undefined }));
+    }
   };
 
   const handleGradeToggle = (grade: string) => {
@@ -163,6 +187,10 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
         ? prev.grades.filter(g => g !== grade)
         : [...prev.grades, grade]
     }));
+    // Effacer l'erreur quand l'utilisateur sélectionne un grade
+    if (errors.grades) {
+      setErrors(prev => ({ ...prev, grades: undefined }));
+    }
   };
 
   return (
@@ -190,6 +218,18 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
             </button>
           </div>
         </div>
+
+        {/* Messages d'erreur */}
+        {(errors.grades || errors.specialites) && (
+          <div className="error-banner">
+            {errors.specialites && (
+              <p className="error-message">• {errors.specialites}</p>
+            )}
+            {errors.grades && (
+              <p className="error-message">• {errors.grades}</p>
+            )}
+          </div>
+        )}
 
         <form id="task-form" onSubmit={handleSubmit} className="task-form">
           {/* Informations générales */}
@@ -356,7 +396,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
             </h2>
             
             <div className="criteria-group">
-              <label className="criteria-label">Spécialités requises</label>
+              <label className="criteria-label">Spécialités requises *</label>
               <div className="checkbox-group">
                 {specialiteOptions.map(option => (
                   <label key={option.value} className="checkbox-label">
@@ -372,7 +412,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
             </div>
 
             <div className="criteria-group">
-              <label className="criteria-label">Grades acceptés</label>
+              <label className="criteria-label">Grades acceptés *</label>
               <div className="checkbox-group">
                 {gradeOptions.map(option => (
                   <label key={option.value} className="checkbox-label">

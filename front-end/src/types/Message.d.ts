@@ -3,6 +3,7 @@ export type UserStatus = 'online' | 'offline' | 'away';
 export interface Message {
   id: string;
   senderId: string;
+  senderName?: string;
   text: string;
   timestamp: string;
   isOwn: boolean;
@@ -18,4 +19,6 @@ export interface Conversation {
   unreadCount: number;
   status: UserStatus;
   messages: Message[];
+  isGroup?: boolean;
+  conversationType?: 'GoupeTACHE' | 'PRIVE';
 }

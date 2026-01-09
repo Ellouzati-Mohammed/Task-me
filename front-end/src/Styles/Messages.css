@@ -270,6 +270,13 @@
   border-radius: 12px;
 }
 
+.message-sender-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #14b8a6;
+  margin-bottom: 4px;
+}
+
 .message.other .message-bubble {
   background-color: #e2e8f0;
   border-bottom-left-radius: 4px;

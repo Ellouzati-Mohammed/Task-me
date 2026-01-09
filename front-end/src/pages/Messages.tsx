@@ -16,89 +16,17 @@ interface ChatParticipant {
 interface ApiConversation {
   _id: string;
   participants: ChatParticipant[];
+  titre?: string;
+  conversation: 'GoupeTACHE' | 'PRIVE';
+  tache?: {
+    _id: string;
+    nom: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
 
-const mockConversations: Conversation[] = [
-  {
-    id: '1',
-    userId: 'ab',
-    userName: 'Ahmed Benali',
-    initials: 'AB',
-    lastMessage: 'D\'accord pour la réunion de ...',
-    timestamp: '10:30',
-    unreadCount: 2,
-    status: 'online',
-    messages: [
-      { id: '1', senderId: 'ab', text: 'Bonjour! Comment allez-vous?', timestamp: '10:00', isOwn: false },
-      { id: '2', senderId: 'me', text: 'Bonjour Ahmed! Je vais bien, merci. Et vous?', timestamp: '10:05', isOwn: true },
-      { id: '3', senderId: 'ab', text: 'Très bien! Je voulais discuter de la tâche de formation React.', timestamp: '10:10', isOwn: false },
-      { id: '4', senderId: 'me', text: 'Oui, bien sûr. Je suis disponible pour en parler.', timestamp: '10:15', isOwn: true },
-      { id: '5', senderId: 'ab', text: 'Parfait! On peut se retrouver demain à 14h?', timestamp: '10:20', isOwn: false }
-    ]
-  },
-  {
-    id: '2',
-    userId: 'fz',
-    userName: 'Fatima Zahra',
-    initials: 'FZ',
-    lastMessage: 'Merci pour les documents',
-    timestamp: '09:15',
-    unreadCount: 0,
-    status: 'online',
-    messages: [
-      { id: '1', senderId: 'fz', text: 'Bonjour! Avez-vous les documents pour l\'audit?', timestamp: '09:00', isOwn: false },
-      { id: '2', senderId: 'me', text: 'Oui, je vous les envoie tout de suite.', timestamp: '09:10', isOwn: true },
-      { id: '3', senderId: 'fz', text: 'Merci pour les documents', timestamp: '09:15', isOwn: false }
-    ]
-  },
-  {
-    id: '3',
-    userId: 'yb',
-    userName: 'Youssef Bennani',
-    initials: 'YB',
-    lastMessage: 'La tâche a été validée',
-    timestamp: 'Hier',
-    unreadCount: 0,
-    status: 'offline',
-    messages: [
-      { id: '1', senderId: 'yb', text: 'Bonjour, j\'ai terminé la planification.', timestamp: 'Hier 15:00', isOwn: false },
-      { id: '2', senderId: 'me', text: 'Parfait, merci!', timestamp: 'Hier 15:30', isOwn: true },
-      { id: '3', senderId: 'yb', text: 'La tâche a été validée', timestamp: 'Hier 16:00', isOwn: false }
-    ]
-  },
-  {
-    id: '4',
-    userId: 'si',
-    userName: 'Sara Idrissi',
-    initials: 'SI',
-    lastMessage: 'Pouvez-vous confirmer?',
-    timestamp: 'Hier',
-    unreadCount: 1,
-    status: 'online',
-    messages: [
-      { id: '1', senderId: 'si', text: 'Bonjour! Pour la formation demain.', timestamp: 'Hier 14:00', isOwn: false },
-      { id: '2', senderId: 'me', text: 'Oui, je confirme ma présence.', timestamp: 'Hier 14:30', isOwn: true },
-      { id: '3', senderId: 'si', text: 'Pouvez-vous confirmer?', timestamp: 'Hier 15:00', isOwn: false }
-    ]
-  },
-  {
-    id: '5',
-    userId: 'ke',
-    userName: 'Karim El Amrani',
-    initials: 'KE',
-    lastMessage: 'Bien reçu',
-    timestamp: 'Lun',
-    unreadCount: 0,
-    status: 'online',
-    messages: [
-      { id: '1', senderId: 'ke', text: 'Les documents sont prêts.', timestamp: 'Lun 11:00', isOwn: false },
-      { id: '2', senderId: 'me', text: 'Parfait, merci beaucoup!', timestamp: 'Lun 11:15', isOwn: true },
-      { id: '3', senderId: 'ke', text: 'Bien reçu', timestamp: 'Lun 11:20', isOwn: false }
-    ]
-  }
-];
+
 
 export function Messages() {
   const { user } = useAuth();
@@ -106,6 +34,8 @@ export function Messages() {
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [activeConversationType, setActiveConversationType] = useState<'GoupeTACHE' | 'PRIVE'>('PRIVE');
+  const [participantsMap, setParticipantsMap] = useState<{ [key: string]: ChatParticipant }>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [messageInput, setMessageInput] = useState('');
 
@@ -128,7 +58,33 @@ export function Messages() {
       
       // Mapper les conversations de l'API au format attendu
       const mappedConversations: Conversation[] = apiConversations.map((conv: ApiConversation) => {
-        // Trouver l'autre participant (pas l'utilisateur connecté)
+        // Créer une map des participants pour cette conversation
+        const participantsMapForConv: { [key: string]: ChatParticipant } = {};
+        conv.participants.forEach(p => {
+          participantsMapForConv[p._id] = p;
+        });
+        
+        // Pour les conversations de groupe
+        if (conv.conversation === 'GoupeTACHE') {
+          const title = conv.titre || conv.tache?.nom || 'Groupe';
+          const initials = title.substring(0, 2).toUpperCase();
+          
+          return {
+            id: conv._id,
+            userId: 'group',
+            userName: title,
+            initials,
+            lastMessage: '',
+            timestamp: new Date(conv.updatedAt).toLocaleDateString('fr-FR'),
+            unreadCount: 0,
+            status: 'offline',
+            messages: [],
+            isGroup: true,
+            conversationType: 'GoupeTACHE'
+          };
+        }
+        
+        // Pour les conversations privées
         const otherParticipant = conv.participants.find(p => p._id !== user?.id);
         
         if (!otherParticipant) {
@@ -147,7 +103,8 @@ export function Messages() {
           timestamp: new Date(conv.updatedAt).toLocaleDateString('fr-FR'),
           unreadCount: 0,
           status: 'offline',
-          messages: []
+          messages: [],
+          conversationType: 'PRIVE'
         };
       }).filter(Boolean) as Conversation[];
       
@@ -156,6 +113,7 @@ export function Messages() {
       // Sélectionner la première conversation par défaut
       if (mappedConversations.length > 0) {
         setActiveConversation(mappedConversations[0]);
+        setActiveConversationType(mappedConversations[0].conversationType || 'PRIVE');
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des conversations:', error);
@@ -170,10 +128,20 @@ export function Messages() {
       const response = await api.get(`/messages/conversation/${chatId}`);
       const apiMessages = response.data.data || [];
       
+      // Créer une map des participants depuis les messages
+      const newParticipantsMap: { [key: string]: ChatParticipant } = {};
+      apiMessages.forEach((msg: any) => {
+        if (msg.expediteur) {
+          newParticipantsMap[msg.expediteur._id] = msg.expediteur;
+        }
+      });
+      setParticipantsMap(newParticipantsMap);
+      
       // Mapper les messages de l'API au format attendu
       const mappedMessages = apiMessages.map((msg: any) => ({
         id: msg._id,
         senderId: msg.expediteur._id,
+        senderName: `${msg.expediteur.prenom} ${msg.expediteur.nom}`,
         text: msg.contenu,
         timestamp: new Date(msg.createdAt).toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
@@ -312,7 +280,10 @@ export function Messages() {
             <div
               key={conversation.id}
               className={`conversation-item ${activeConversation?.id === conversation.id ? 'active' : ''}`}
-              onClick={() => setActiveConversation(conversation)}
+              onClick={() => {
+                setActiveConversation(conversation);
+                setActiveConversationType(conversation.conversationType || 'PRIVE');
+              }}
             >
               <div className="conversation-avatar-wrapper">
                 <div className="conversation-avatar">
@@ -386,6 +357,9 @@ export function Messages() {
                     className={`message ${message.isOwn ? 'own' : 'other'}`}
                   >
                     <div className="message-bubble">
+                      {activeConversationType === 'GoupeTACHE' && !message.isOwn && (
+                        <div className="message-sender-name">{message.senderName}</div>
+                      )}
                       <p className="message-text">{message.text}</p>
                       <span className="message-time">{message.timestamp}</span>
                     </div>

@@ -65,7 +65,26 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
    const addUser = async () =>{
     try {
         setError('');
-        const res = await api.post("/users/", formData);
+        // Préparer les données pour le backend
+        const dataToSend: any = {
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          motdePasse: formData.motdePasse,
+          role: formData.role,
+          actif: formData.actif,
+          dateembauche: formData.dateInscription
+        };
+
+        // Ajouter les champs spécifiques aux auditeurs
+        if (formData.role === 'auditeur') {
+          dataToSend.grade = formData.grade !== '' ? formData.grade : undefined;
+          dataToSend.specialite = formData.specialite;
+          dataToSend.diplomes = formData.diplomes || '';
+          dataToSend.formation = Array.isArray(formData.formations) ? formData.formations.join(', ') : formData.formations || '';
+        }
+
+        const res = await api.post("/users/", dataToSend);
         console.log(res);
         return true;
     } catch (err: unknown) {
@@ -293,6 +312,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                       onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value as UserGrade }))}
                       required
                     >
+                      <option value="">Sélectionner un grade</option>
                       {gradeOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -307,6 +327,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                       onChange={(e) => setFormData(prev => ({ ...prev, specialite: e.target.value as Specialite }))}
                       required
                     >
+                      <option value="">Sélectionner une spécialité</option>
                       {specialiteOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
