@@ -4,152 +4,80 @@ const bcrypt = require('bcrypt');
 
 dotenv.config();
 
-// Importer les modèles
+// Importer le modèle User
 const User = require('./src/models/UsersModel');
-const Task = require('./src/models/TaskModel');
-const Vehicle = require('./src/models/VehicleModel');
-const Affectation = require('./src/models/AffectationModel');
-const Chat = require('./src/models/ChatModel');
-const Message = require('./src/models/MessageModel');
-const Notification = require('./src/models/NotificationModel');
 
 // Générer les mots de passe hashés
-const password1 = bcrypt.hashSync('password123', 10);
-const password2 = bcrypt.hashSync('password456', 10);
+const adminPassword = bcrypt.hashSync('123', 10);
+const coordinateurPassword = bcrypt.hashSync('123', 10);
+const auditeur1Password = bcrypt.hashSync('123', 10);
+const auditeur2Password = bcrypt.hashSync('123', 10);
 
 // Données de test
 const usersData = [
   {
+    nom: 'Admin',
+    prenom: 'Système',
+    email: 'admin@taskme.ma',
+    motdePasse: adminPassword,
+    actif: true,
+    role: 'admin',
+    dateembauche: new Date('2024-01-01')
+  },
+  {
     nom: 'Imane',
-    prenom: 'El',
-    email: 'imane.el@test.com',
-    motdePasse: password1,
-    grade: 'A',
-    specialite: 'pédagogique',
-    formation: 'Formation Node.js',
-    diplomes: 'Master Informatique',
+    prenom: 'El Fadili',
+    email: 'imane.el@taskme.ma',
+    motdePasse: coordinateurPassword,
     actif: true,
     role: 'coordinateur',
-    dateembauche: new Date('2022-09-01')
+    dateembauche: new Date('2024-06-01')
   },
   {
-    nom: 'Youssef',
-    prenom: 'Benali',
-    email: 'youssef.benali@test.com',
-    motdePasse: password2,
+    nom: 'Benali',
+    prenom: 'Ahmed',
+    email: 'ahmed.benali@taskme.ma',
+    motdePasse: auditeur1Password,
+    grade: 'A',
+    specialite: 'pedagogique',
+    formation: 'Formation Pédagogie Avancée',
+    diplomes: 'Master en Sciences de l\'Éducation',
+    actif: true,
+    role: 'auditeur',
+    dateembauche: new Date('2024-09-01')
+  },
+  {
+    nom: 'Zahra',
+    prenom: 'Fatima',
+    email: 'fatima.zahra@taskme.ma',
+    motdePasse: auditeur2Password,
     grade: 'B',
     specialite: 'orientation',
-    formation: 'Formation Agile',
-    diplomes: 'Licence Management',
+    formation: 'Formation Orientation Professionnelle',
+    diplomes: 'Licence en Psychologie',
     actif: true,
-    role: 'user',
-    dateembauche: new Date('2023-01-15')
+    role: 'auditeur',
+    dateembauche: new Date('2025-03-15')
   }
 ];
 
-const tasksData = [
-  {
-    nom: 'Audit pédagogique',
-    description: 'Audit des cours dispensés au centre de formation',
-    typeTache: 'Observateur',
-    dateDebut: new Date('2026-01-10T09:00:00Z'),
-    dateFin: new Date('2026-01-10T17:00:00Z'),
-    remuneree: true,
-    specialites: ['pédagogique'],
-    grades: ['A', 'B'],
-    necessiteVehicule: true,
-    directionAssociee: 'Rabat-Casa',
-    fichierJoint: 'audit.pdf',
-    nombrePlaces: 2,
-    Vehicle:Vehicles[0]?._id,
-    statutTache: 'Ouverte'
-  },
-  {
-    nom: 'Formation Agile',
-    description: 'Session de formation sur les méthodes agiles',
-    typeTache: 'Formateur',
-    dateDebut: new Date('2026-01-12T09:00:00Z'),
-    dateFin: new Date('2026-01-12T17:00:00Z'),
-    remuneree: true,
-    specialites: ['orientation'],
-    grades: ['B'],
-    necessiteVehicule: false,
-    directionAssociee: 'Meknès-Errachidia',
-    fichierJoint: 'agile.pdf',
-    nombrePlaces: 3,
-    statutTache: 'Ouverte',
-    urgent: true
-  }
-];
-
-// Connexion MongoDB avec promesse
-
+// Connexion MongoDB
 mongoose.connect('mongodb+srv://ifdili_db_user:imanefd@cluster0.uugwydp.mongodb.net/TaskMe?retryWrites=true&w=majority')
   .then(() => {
     console.log('Connexion à MongoDB établie.');
-    console.log('Nettoyage des collections...');
-
-    return User.deleteMany({})
-      .then(() => Task.deleteMany({}))
-      .then(() => Vehicle.deleteMany({}))
-      .then(() => Affectation.deleteMany({}))
-      .then(() => Chat.deleteMany({}))
-      .then(() => Message.deleteMany({}))
-      .then(() => Notification.deleteMany({}));
+    console.log('Nettoyage de la collection users...');
+    return User.deleteMany({});
   })
   .then(() => {
     console.log('Insertion des utilisateurs...');
     return User.insertMany(usersData);
   })
-  .then(users => {
-    console.log('Insertion des tâches...');
-    return Task.insertMany(tasksData).then(tasks => ({ users, tasks }));
-  })
-  .then(({ users, tasks }) => {
-    console.log('Insertion des véhicules...');
-    return Vehicle.insertMany([
-      { immatriculation: '123-ABC', marque: 'Toyota', modele: 'Corolla', direction: 'Rabat-Casa' },
-      { immatriculation: '456-XYZ', marque: 'Renault', modele: 'Clio', direction: 'Meknès-Errachidia' }
-    ]).then(() => ({ users, tasks }));
-  })
-  
-  .then(({ users, tasks }) => {
-    console.log('Insertion des affectations...');
-    return Affectation.insertMany([
-      {
-        modeAffectation: 'SEMI_AUTOMATISE',
-        statutAffectation: 'PROPOSEE',
-        tache: tasks[0]._id,
-        auditeur: users[1]._id,
-        rapportAlgorithmique: 'Affectation basée sur spécialité et disponibilité',
-        dateAffectation: new Date('2026-01-05T10:00:00Z')
-      }
-    ]).then(() => ({ users }));
-  })
-  .then(({ users }) => {
-    console.log('Insertion du chat et message...');
-    return Chat.create({
-      participants: [users[0]._id, users[1]._id],
-      titre: 'Discussion sur l’audit',
-      conversation: 'GoupeTACHE'
-    }).then(chat => {
-      return Message.create({
-        contenu: "Bonjour, peux-tu préparer le rapport d’audit ?",
-        conversation: chat._id,
-        expediteur: users[0]._id
-      }).then(() => ({ users }));
-    });
-  })
-  .then(({ users }) => {
-    console.log('Insertion des notifications...');
-    return Notification.create({
-      typeNotification: 'AFFECTATION',
-      message: 'Nouvelle tâche affectée : Audit pédagogique',
-      utilisateur: users[1]._id
-    });
-  })
-  .then(() => {
-    console.log('Données de test insérées avec succès !');
+  .then((users) => {
+    console.log(`${users.length} utilisateurs créés avec succès !`);
+    console.log('- Admin: admin@taskme.ma (mot de passe: 123)');
+    console.log('- Coordinateur: imane.el@taskme.ma (mot de passe: 123)');
+    console.log('- Auditeur 1: ahmed.benali@taskme.ma (mot de passe: 123)');
+    console.log('- Auditeur 2: fatima.zahra@taskme.ma (mot de passe: 123)');
     return mongoose.disconnect();
   })
   .then(() => process.exit(0))
