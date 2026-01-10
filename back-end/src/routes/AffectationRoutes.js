@@ -5,6 +5,7 @@ const { authMiddleware } = require('../middlewares/auth.middleware');
 const { assignTaskAuto } = require('../controllers/AffecAuto');
 const { assignTaskSemiAuto } = require('../controllers/AffectSemiAuto');
 
+
 // Endpoint pour générer une affectation semi-automatisée
 router.post('/assign/semi/:taskId', async (req, res) => {
   try {
@@ -311,15 +312,9 @@ router.delete('/:id', async (req, res) => {
 router.post('/assign/semi/:taskId', async (req, res) => { 
   try { 
     const report = await assignTaskSemiAuto(req.params.taskId); 
-    res.json(report); 
-  } catch (err) { 
-    res.status(500).json({ error: err.message }); 
+    res.json(report); } catch (err) { res.status(500).json({ error: err.message }); 
   } 
 });
-
-
-
-
 
 // Endpoint pour affectation automatisée (IA) 
 router.post('/assign/auto', async (req, res) => { 

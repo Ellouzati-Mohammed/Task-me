@@ -7,7 +7,7 @@ const { spawn } = require('child_process'); // pour Ollama
 // Fonction pour interroger Ollama
 function askOllama(prompt) {
   return new Promise((resolve, reject) => {
-    const ollama = spawn('ollama', ['run', 'llama3']);
+    const ollama = spawn('ollama', ['run', 'llama2:latest']);
     let output = '';
 
     ollama.stdin.write(prompt);
