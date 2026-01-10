@@ -2,6 +2,21 @@ const express = require('express');
 const router = express.Router();
 const Affectation = require('../models/AffectationModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
+const { assignTaskAuto } = require('../controllers/AffecAuto');
+const { assignTaskSemiAuto } = require('../controllers/AffectSemiAuto');
+
+// Endpoint pour générer une affectation semi-automatisée
+router.post('/assign/semi/:taskId', async (req, res) => {
+  try {
+    const report = await assignTaskSemiAuto(req.params.taskId);
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
+
 
 // CRUD Affectations
 router.get('/', async (req, res) => {
@@ -290,6 +305,45 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Erreur suppression affectation' });
   }
+});
+
+// Endpoint pour générer une affectation semi-automatisée 
+router.post('/assign/semi/:taskId', async (req, res) => { 
+  try { 
+    const report = await assignTaskSemiAuto(req.params.taskId); 
+    res.json(report); 
+  } catch (err) { 
+    res.status(500).json({ error: err.message }); 
+  } 
+});
+
+
+
+
+
+// Endpoint pour affectation automatisée (IA) 
+router.post('/assign/auto', async (req, res) => { 
+  try { 
+    const { taskId } = req.body; // le coordinateur envoie l'ID de la tâche 
+    const report = await assignTaskAuto(taskId); 
+    res.json(report); 
+  } catch (err) { 
+    res.status(500).json({ error: err.message }); 
+  } 
+});
+
+// Endpoint pour affectation automatisée (IA) - création de tâche 
+router.post('/assign/auto/create', async (req, res) => { 
+  try { const { title, specialty, startDate, endDate, paid } = req.body; 
+  // Créer la tâche 
+  const task = new Task({ title, specialty, startDate, endDate, paid }); 
+  await task.save(); 
+  // Lancer l’IA 
+  const report = await assignTaskAuto(task._id); 
+  res.json({ success: true, data: report }); 
+} catch (err) { 
+  res.status(500).json({ success: false, message: err.message }); 
+} 
 });
 
 module.exports = router;

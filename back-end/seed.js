@@ -22,7 +22,8 @@ const usersData = [
     motdePasse: adminPassword,
     actif: true,
     role: 'admin',
-    dateembauche: new Date('2024-01-01')
+    dateembauche: new Date('2024-01-01'),
+    paidTasksCount:0
   },
   {
     nom: 'Imane',
@@ -31,7 +32,8 @@ const usersData = [
     motdePasse: coordinateurPassword,
     actif: true,
     role: 'coordinateur',
-    dateembauche: new Date('2024-06-01')
+    dateembauche: new Date('2024-06-01'),
+    paidTasksCount:1
   },
   {
     nom: 'Benali',
@@ -44,7 +46,8 @@ const usersData = [
     diplomes: 'Master en Sciences de l\'Éducation',
     actif: true,
     role: 'auditeur',
-    dateembauche: new Date('2024-09-01')
+    dateembauche: new Date('2024-09-01'),
+    paidTasksCount:2
   },
   {
     nom: 'Zahra',
@@ -57,7 +60,8 @@ const usersData = [
     diplomes: 'Licence en Psychologie',
     actif: true,
     role: 'auditeur',
-    dateembauche: new Date('2025-03-15')
+    dateembauche: new Date('2025-03-15'),
+    paidTasksCount:3
   }
 ];
 
