@@ -139,18 +139,21 @@ export function Login() {
           </p>
 
           <div className="demo-accounts">
-            <p className="demo-title">Comptes de démo:</p>
+            <p className="demo-title">Comptes de test:</p>
             <div className="demo-list">
               <p className="demo-item">
-                <span className="demo-role">Super Admin:</span> superadmin@taskme.ma
+                <span className="demo-role">Admin:</span> admin@taskme.ma
               </p>
               <p className="demo-item">
-                <span className="demo-role">Coordinateur:</span> admin@taskme.ma
+                <span className="demo-role">Coordinateur:</span> imane.el@taskme.ma
               </p>
               <p className="demo-item">
-                <span className="demo-role">Auditeur:</span> user@taskme.ma
+                <span className="demo-role">Auditeur 1:</span> ahmed.benali@taskme.ma
               </p>
-              <p className="demo-password">Mot de passe: 6+ caractères</p>
+              <p className="demo-item">
+                <span className="demo-role">Auditeur 2:</span> fatima.zahra@taskme.ma
+              </p>
+              <p className="demo-password">Mot de passe pour tous: 123</p>
             </div>
           </div>
         </div>
