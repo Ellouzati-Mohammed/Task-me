@@ -35,20 +35,8 @@ export function Messages() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [activeConversationType, setActiveConversationType] = useState<'GoupeTACHE' | 'PRIVE'>('PRIVE');
-  const [participantsMap, setParticipantsMap] = useState<{ [key: string]: ChatParticipant }>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [messageInput, setMessageInput] = useState('');
-
-  useEffect(() => {
-    fetchConversations();
-  }, []);
-
-  // Récupérer les messages quand une conversation est sélectionnée
-  useEffect(() => {
-    if (activeConversation) {
-      fetchMessages(activeConversation.id);
-    }
-  }, [activeConversation?.id]);
 
   const fetchConversations = async () => {
     try {
@@ -58,12 +46,6 @@ export function Messages() {
       
       // Mapper les conversations de l'API au format attendu
       const mappedConversations: Conversation[] = apiConversations.map((conv: ApiConversation) => {
-        // Créer une map des participants pour cette conversation
-        const participantsMapForConv: { [key: string]: ChatParticipant } = {};
-        conv.participants.forEach(p => {
-          participantsMapForConv[p._id] = p;
-        });
-        
         // Pour les conversations de groupe
         if (conv.conversation === 'GoupeTACHE') {
           const title = conv.titre || conv.tache?.nom || 'Groupe';
@@ -77,10 +59,10 @@ export function Messages() {
             lastMessage: '',
             timestamp: new Date(conv.updatedAt).toLocaleDateString('fr-FR'),
             unreadCount: 0,
-            status: 'offline',
+            status: 'offline' as const,
             messages: [],
             isGroup: true,
-            conversationType: 'GoupeTACHE'
+            conversationType: 'GoupeTACHE' as const
           };
         }
         
@@ -102,9 +84,9 @@ export function Messages() {
           lastMessage: '',
           timestamp: new Date(conv.updatedAt).toLocaleDateString('fr-FR'),
           unreadCount: 0,
-          status: 'offline',
+          status: 'offline' as const,
           messages: [],
-          conversationType: 'PRIVE'
+          conversationType: 'PRIVE' as const
         };
       }).filter(Boolean) as Conversation[];
       
@@ -122,23 +104,26 @@ export function Messages() {
     }
   };
 
+  useEffect(() => {
+    fetchConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fetchMessages = async (chatId: string) => {
     try {
       setLoadingMessages(true);
       const response = await api.get(`/messages/conversation/${chatId}`);
       const apiMessages = response.data.data || [];
       
-      // Créer une map des participants depuis les messages
-      const newParticipantsMap: { [key: string]: ChatParticipant } = {};
-      apiMessages.forEach((msg: any) => {
-        if (msg.expediteur) {
-          newParticipantsMap[msg.expediteur._id] = msg.expediteur;
-        }
-      });
-      setParticipantsMap(newParticipantsMap);
+      interface ApiMessage {
+        _id: string;
+        contenu: string;
+        expediteur: ChatParticipant;
+        createdAt: string;
+      }
       
       // Mapper les messages de l'API au format attendu
-      const mappedMessages = apiMessages.map((msg: any) => ({
+      const mappedMessages = apiMessages.map((msg: ApiMessage) => ({
         id: msg._id,
         senderId: msg.expediteur._id,
         senderName: `${msg.expediteur.prenom} ${msg.expediteur.nom}`,
@@ -160,27 +145,20 @@ export function Messages() {
         }
         return prev;
       });
-
-      // Mettre à jour aussi dans la liste des conversations
-      setConversations(prevConvs => 
-        prevConvs.map(conv => 
-          conv.id === chatId 
-            ? { 
-                ...conv, 
-                messages: mappedMessages,
-                lastMessage: mappedMessages.length > 0 
-                  ? mappedMessages[mappedMessages.length - 1].text 
-                  : ''
-              }
-            : conv
-        )
-      );
     } catch (error) {
       console.error('Erreur lors de la récupération des messages:', error);
     } finally {
       setLoadingMessages(false);
     }
   };
+
+  // Récupérer les messages quand une conversation est sélectionnée
+  useEffect(() => {
+    if (activeConversation) {
+      fetchMessages(activeConversation.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation]);
 
   const filteredConversations = conversations.filter(conv =>
     conv.userName.toLowerCase().includes(searchQuery.toLowerCase())

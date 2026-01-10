@@ -236,7 +236,7 @@ export function MyTasks() {
                         >
                           <XCircle size={18} />
                         </button>
-                        {affectation.canDelegate !== false && (
+                        {(affectation as { canDelegate?: boolean }).canDelegate !== false && (
                           <button 
                             className="task-action-btn delegate"
                             onClick={() => handleDelegate(affectation._id, task.nom)}

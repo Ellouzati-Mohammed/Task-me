@@ -102,7 +102,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
           });
           const availableVehicles = response.data.data || [];
           // Filtrer uniquement les véhicules disponibles
-          const onlyAvailable = availableVehicles.filter((v: any) => v.isAvailable);
+          const onlyAvailable = availableVehicles.filter((v: { isAvailable?: boolean }) => v.isAvailable);
           setVehicles(onlyAvailable);
         } catch (error) {
           console.error('Erreur lors de la récupération des véhicules:', error);

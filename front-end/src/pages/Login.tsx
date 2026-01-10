@@ -21,8 +21,9 @@ export function Login() {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Erreur de connexion. Vérifiez vos identifiants.');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || 'Erreur de connexion. Vérifiez vos identifiants.');
     } finally {
       setLoading(false);
     }

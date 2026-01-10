@@ -66,7 +66,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
     try {
         setError('');
         // Préparer les données pour le backend
-        const dataToSend: any = {
+        const dataToSend: Partial<User> & { formation?: string } = {
           nom: formData.nom,
           prenom: formData.prenom,
           email: formData.email,

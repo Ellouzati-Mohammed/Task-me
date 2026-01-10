@@ -82,9 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         throw new Error(response.data.message || 'Erreur de connexion');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur de connexion:', error);
-      throw new Error(error.response?.data?.message || 'Erreur de connexion');
+      const err = error as { response?: { data?: { message?: string } } };
+      throw new Error(err.response?.data?.message || 'Erreur de connexion');
     }
   };
 

@@ -299,7 +299,7 @@ export function Dashboard() {
           .filter((aff: ApiAffectation) => aff.auditeur) // Filtrer seulement si auditeur existe
           .map((aff: ApiAffectation) => ({
             id: aff._id,
-            userName: `${aff.auditeur.prenom} ${aff.auditeur.nom}`,
+            userName: `${aff.auditeur?.prenom || ''} ${aff.auditeur?.nom || ''}`,
             taskName: aff.tache?.nom || 'Tâche supprimée',
             status: aff.statutAffectation,
             date: aff.updatedAt || aff.createdAt
