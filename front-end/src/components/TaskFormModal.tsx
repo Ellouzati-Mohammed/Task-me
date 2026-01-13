@@ -14,10 +14,10 @@ const typeTacheOptions = [
 ];
 
 const specialiteOptions = [
-  { value: 'Pédagogique', label: 'Pédagogique' },
-  { value: 'Orientation', label: 'Orientation' },
-  { value: 'Planification', label: 'Planification' },
-  { value: 'Services financiers', label: 'Services financiers' }
+  { value: 'pedagogique', label: 'Pédagogique' },
+  { value: 'orientation', label: 'Orientation' },
+  { value: 'planification', label: 'Planification' },
+  { value: 'services_financiers', label: 'Services financiers' }
 ];
 
 const gradeOptions = [

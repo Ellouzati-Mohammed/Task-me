@@ -154,11 +154,11 @@ export function Messages() {
 
   // Récupérer les messages quand une conversation est sélectionnée
   useEffect(() => {
-    if (activeConversation) {
+    if (activeConversation?.id) {
       fetchMessages(activeConversation.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConversation]);
+  }, [activeConversation?.id]);
 
   const filteredConversations = conversations.filter(conv =>
     conv.userName.toLowerCase().includes(searchQuery.toLowerCase())

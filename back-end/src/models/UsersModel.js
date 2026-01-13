@@ -1,5 +1,5 @@
 const mongoose = require('mongoose'); 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { Schema } = mongoose; 
 
 const userSchema = new Schema({ 
@@ -14,7 +14,8 @@ const userSchema = new Schema({
     diplomes: { type: String }, 
     actif: { type: Boolean, default: true }, 
     role: { type: String, enum: ["admin", "coordinateur", "auditeur"], default: "auditeur" } , 
-    dateembauche:{ type: Date }
+    dateembauche:{ type: Date },
+    paidTasksCount: { type: Number, default: 0 },
 });
 
 // Hachage du mot de passe avant la sauvegarde

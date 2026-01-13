@@ -103,6 +103,35 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
     }
   };
 
+  const handleSemiAutoAffect = async () => {
+    try {
+      setSubmitting(true);
+      
+      // Appeler l'API d'affectation semi-automatique
+      const response = await api.post('/affectations/assign-semi-auto', {
+        taskId: taskId
+      });
+      
+      const suggestedUsers = response.data.data;
+      
+      if (suggestedUsers && suggestedUsers.length > 0) {
+        // Sélectionner automatiquement les utilisateurs retournés par l'API
+        const userIds = suggestedUsers.map((user: User) => user._id);
+        setSelectedUsers(userIds);
+        
+        alert(`${suggestedUsers.length} utilisateur(s) suggéré(s) par l'affectation semi-automatique`);
+      } else {
+        alert('Aucun utilisateur disponible pour cette tâche');
+      }
+    } catch (error: unknown) {
+      console.error('Erreur lors de l\'affectation semi-automatique:', error);
+      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erreur lors de l\'affectation semi-automatique';
+      alert(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="task-form-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
@@ -204,18 +233,32 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
               : `${selectedUsers.length} / ${maxPlaces - existingAffectationsCount} utilisateur(s) sélectionné(s)`
             }
           </div>
-          <button 
-            className="submit-button"
-            onClick={handleAffectUsers}
-            disabled={submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces}
-            style={{ 
-              padding: '10px 24px',
-              opacity: (submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces) ? 0.5 : 1,
-              cursor: (submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {submitting ? 'Affectation en cours...' : `Affecter ${selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}`}
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              className="cancel-button"
+              onClick={handleSemiAutoAffect}
+              disabled={submitting || existingAffectationsCount >= maxPlaces}
+              style={{ 
+                padding: '10px 20px',
+                opacity: (submitting || existingAffectationsCount >= maxPlaces) ? 0.5 : 1,
+                cursor: (submitting || existingAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {submitting ? 'Chargement...' : 'Affectation semi-auto'}
+            </button>
+            <button 
+              className="submit-button"
+              onClick={handleAffectUsers}
+              disabled={submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces}
+              style={{ 
+                padding: '10px 24px',
+                opacity: (submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces) ? 0.5 : 1,
+                cursor: (submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {submitting ? 'Affectation en cours...' : `Affecter ${selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}`}
+            </button>
+          </div>
         </div>
       </div>
     </div>
