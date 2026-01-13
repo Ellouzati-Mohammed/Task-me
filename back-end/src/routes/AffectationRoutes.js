@@ -1,7 +1,111 @@
 const express = require('express');
 const router = express.Router();
 const Affectation = require('../models/AffectationModel');
+const Task = require('../models/TaskModel');
+const User = require('../models/UsersModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
+
+/**
+ * Vérifie si un utilisateur a un conflit de dates avec une tâche
+ * @param {string} userId - L'ID de l'utilisateur
+ * @param {Object} task - La tâche à vérifier
+ * @returns {Promise<Object|false>} - Retourne un objet avec les détails du conflit ou false s'il n'y a pas de conflit
+ */
+const hasTimeConflict = async (userId, task) => {
+  try {
+    // Récupérer les affectations acceptées de l'utilisateur
+    const acceptedAffectations = await Affectation.find({
+      auditeur: userId,
+      statutAffectation: 'ACCEPTEE'
+    }).populate('tache');
+
+    const currentStart = new Date(task.dateDebut);
+    const currentEnd = new Date(task.dateFin);
+    
+    // Vérifier chaque affectation acceptée
+    for (const affectation of acceptedAffectations) {
+      if (affectation.tache) {
+        const existingTask = affectation.tache;
+        const existingStart = new Date(existingTask.dateDebut);
+        const existingEnd = new Date(existingTask.dateFin);
+
+        // Vérifier le chevauchement
+        if (currentStart < existingEnd && currentEnd > existingStart) {
+          return {
+            hasConflict: true,
+            conflictingTask: existingTask,
+            message: `Conflit de dates : L'utilisateur a déjà accepté la tâche "${existingTask.nom}" du ${existingStart.toLocaleDateString('fr-FR')} au ${existingEnd.toLocaleDateString('fr-FR')}`
+          };
+        }
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Erreur vérification conflit de dates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Affectation semi-automatisée d'une tâche à un auditeur
+ * @param {string} taskId - L'ID de la tâche à affecter
+ * @returns {Promise<Object>} - Rapport détaillé de l'affectation
+ */
+async function assignTaskSemiAuto(taskId) {
+  const task = await Task.findById(taskId);
+  
+  if (!task) {
+    throw new Error('Tâche introuvable');
+  }
+
+  // Étape 1 : filtrer les auditeurs par spécialité + grade
+  const specialiteFilter ={
+  role: "auditeur",
+  actif: true,
+  specialite: { $in: task.specialites },
+  grade: { $in: task.grades }
+ };
+  
+
+  let auditors = await User.find(specialiteFilter);
+
+  if (auditors.length === 0) {
+    throw new Error('Aucun auditeur disponible pour cette spécialité');
+  }
+
+  // Étape 2 : éliminer les conflits temporels
+  const auditorsWithoutConflict = [];
+  for (const auditor of auditors) {
+    const conflict = await hasTimeConflict(auditor._id, task);
+    if (!conflict) {
+      auditorsWithoutConflict.push(auditor);
+    }
+  }
+
+  if (auditorsWithoutConflict.length === 0) {
+    throw new Error('Aucun auditeur disponible sans conflit de dates');
+  }
+
+  // Étape 3 : trier par ancienneté et rémunération équitable
+  auditorsWithoutConflict.sort((a, b) => {
+    const dateA = a.dateembauche ? new Date(a.dateembauche).getTime() : Date.now();
+    const dateB = b.dateembauche ? new Date(b.dateembauche).getTime() : Date.now();
+    
+    if (dateA !== dateB) {
+      return dateA - dateB; // plus ancien d'abord
+    }
+    return (a.paidTasksCount || 0) - (b.paidTasksCount || 0); // moins de tâches rémunérées d'abord
+  });
+
+  // Étape 4 : choisir l'auditeur
+  const nbrplace=task.nombrePlaces;
+  const chosen = auditorsWithoutConflict.slice(0, nbrplace);
+
+ 
+  // Étape 6 : générer le rapport JSON
+  return chosen;
+}
 
 // CRUD Affectations
 router.get('/', async (req, res) => {
@@ -152,29 +256,13 @@ router.post('/assign', authMiddleware, async (req, res) => {
     }
 
     // Vérifier les chevauchements de dates avec les tâches acceptées par l'utilisateur
-    const acceptedAffectations = await Affectation.find({
-      auditeur: userId,
-      statutAffectation: 'ACCEPTEE'
-    }).populate('tache');
-
-    // Vérifier si une tâche acceptée chevauche avec la tâche actuelle
-    for (const affectation of acceptedAffectations) {
-      if (affectation.tache) {
-        const existingTask = affectation.tache;
-        const currentStart = new Date(currentTask.dateDebut);
-        const currentEnd = new Date(currentTask.dateFin);
-        const existingStart = new Date(existingTask.dateDebut);
-        const existingEnd = new Date(existingTask.dateFin);
-
-        // Vérifier le chevauchement : la nouvelle tâche commence avant que l'ancienne se termine
-        // ET la nouvelle tâche se termine après que l'ancienne commence
-        if (currentStart < existingEnd && currentEnd > existingStart) {
-          return res.status(400).json({
-            success: false,
-            message: `Conflit de dates : L'utilisateur a déjà accepté la tâche "${existingTask.nom}" du ${existingStart.toLocaleDateString('fr-FR')} au ${existingEnd.toLocaleDateString('fr-FR')}`
-          });
-        }
-      }
+    const conflict = await hasTimeConflict(userId, currentTask);
+    
+    if (conflict) {
+      return res.status(400).json({
+        success: false,
+        message: conflict.message
+      });
     }
 
     // Créer la nouvelle affectation
@@ -216,6 +304,34 @@ router.post('/assign', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur lors de l\'affectation de l\'utilisateur'
+    });
+  }
+});
+
+// Affectation semi-automatisée d'une tâche
+router.post('/assign-semi-auto', async (req, res) => {
+  try {
+    const { taskId } = req.body;
+
+    if (!taskId) {
+      return res.status(400).json({
+        success: false,
+        message: 'taskId est requis'
+      });
+    }
+
+    const report = await assignTaskSemiAuto(taskId);
+
+    res.status(201).json({
+      success: true,
+      message: 'Tâche affectée avec succès en mode semi-automatisé',
+      data: report
+    });
+  } catch (error) {
+    console.error('Erreur affectation semi-automatisée:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erreur lors de l\'affectation semi-automatisée'
     });
   }
 });
