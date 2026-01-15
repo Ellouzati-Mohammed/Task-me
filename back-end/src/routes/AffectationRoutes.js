@@ -4,6 +4,7 @@ const Affectation = require('../models/AffectationModel');
 const Task = require('../models/TaskModel');
 const User = require('../models/UsersModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
+const axios = require('axios');
 
 /**
  * Vérifie si un utilisateur a un conflit de dates avec une tâche
@@ -309,6 +310,82 @@ router.post('/assign', authMiddleware, async (req, res) => {
 });
 
 // Affectation semi-automatisée d'une tâche
+/**
+ * Affectation automatique d'une tâche à des auditeurs via Ollama
+ * @route POST /assign-auto
+ * @body { taskId: string }
+ * @returns {Object[]} Utilisateurs sélectionnés
+ */
+router.post('/assign-auto', async (req, res) => {
+  try {
+    const { taskId } = req.body;
+    if (!taskId) {
+      return res.status(400).json({ success: false, message: 'taskId est requis' });
+    }
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Tâche introuvable' });
+    }
+
+
+    // Récupérer tous les auditeurs actifs
+    const allAuditors = await User.find({ role: 'auditeur', actif: true });
+
+    // Filtrer les auditeurs sans conflit de dates
+    const auditors = [];
+    for (const auditor of allAuditors) {
+      const conflict = await hasTimeConflict(auditor._id, task);
+      if (!conflict) {
+        auditors.push(auditor);
+      }
+    }
+
+    // Préparer le prompt pour Groq
+    const prompt = `Voici la liste des auditeurs (format JSON): ${JSON.stringify(auditors)}. Voici la tâche (format JSON): ${JSON.stringify(task)}. Sélectionne les meilleurs auditeurs pour cette tâche en tenant compte de la spécialité, du grade et de l'ancienneté. Retourne uniquement un tableau JSON des _id des auditeurs à affecter, sans texte autour.`;
+
+    // Appel à l'API Groq (OpenAI compatible)
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ success: false, message: 'GROQ_API_KEY non défini dans les variables d\'environnement' });
+    }
+
+    const groqResponse = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: 'Tu es un assistant pour l\'affectation intelligente des tâches.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 512,
+        temperature: 0.2
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // On suppose que la réponse contient un tableau d'IDs d'utilisateurs à affecter dans le message
+    let selectedUserIds = [];
+    try {
+      const content = groqResponse.data.choices[0].message.content;
+      selectedUserIds = JSON.parse(content);
+    } catch (e) {
+      return res.status(500).json({ success: false, message: "Réponse Groq invalide", raw: groqResponse.data });
+    }
+
+    // Renvoyer les utilisateurs sélectionnés
+    const selectedUsers = auditors.filter(u => selectedUserIds.includes(u._id.toString()));
+    res.json({ success: true, data: selectedUsers });
+  } catch (error) {
+    console.error('Erreur affectation auto via Ollama:', error);
+    res.status(500).json({ success: false, message: error.message || 'Erreur lors de l\'affectation auto' });
+  }
+});
 router.post('/assign-semi-auto', async (req, res) => {
   try {
     const { taskId } = req.body;
