@@ -4,7 +4,7 @@ const Affectation = require('../models/AffectationModel.js');
 // Scheduler global : toutes les 10 minutes
 schedule.scheduleJob('0 0 */2 * * *', async function() {
   try {
-    console.log("start job")
+    console.log("start job affectation Expiration")
     const now = new Date();
 
     // Chercher les affectations "PROPOSEE" qui ont dépassé expiresAt

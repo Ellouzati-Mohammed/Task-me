@@ -5,6 +5,7 @@ const Task = require('../models/TaskModel');
 const User = require('../models/UsersModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 const axios = require('axios');
+const { sendEmail } = require('../services/emailService');
 
 /**
  * Vérifie si un utilisateur a un conflit de dates avec une tâche
@@ -220,6 +221,7 @@ router.post('/', async (req, res) => {
 });
 
 // Affecter un utilisateur à une tâche
+
 router.post('/assign', authMiddleware, async (req, res) => {
   try {
     const { taskId, userId, modeAffectation = 'MANUEL', affectationOrigine } = req.body;
@@ -294,6 +296,19 @@ router.post('/assign', authMiddleware, async (req, res) => {
     const populatedAffectation = await Affectation.findById(newAffectation._id)
       .populate('tache')
       .populate('auditeur');
+
+    // Envoi d'email à l'auditeur
+    try {
+      if (populatedAffectation?.auditeur?.email) {
+        await sendEmail(
+          populatedAffectation.auditeur.email,
+          `Nouvelle affectation de tâche : ${populatedAffectation.tache.nom}`,
+          `Bonjour ${populatedAffectation.auditeur.prenom},\n\nVous avez été affecté(e) à la tâche : ${populatedAffectation.tache.nom}.\nDescription : ${populatedAffectation.tache.description}\nDu ${new Date(populatedAffectation.tache.dateDebut).toLocaleDateString('fr-FR')} au ${new Date(populatedAffectation.tache.dateFin).toLocaleDateString('fr-FR')}.\n\nMerci de consulter votre espace pour plus de détails.`
+        );
+      }
+    } catch (err) {
+      console.error('Erreur lors de l\'envoi de l\'email:', err);
+    }
 
     res.status(201).json({
       success: true,
