@@ -120,26 +120,34 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     // Validation : au moins un grade et une spécialité
-    const newErrors: { grades?: string; specialites?: string } = {};
-    
+    const newErrors: { grades?: string; specialites?: string; date?: string } = {};
+
     if (formData.grades.length === 0) {
       newErrors.grades = 'Veuillez sélectionner au moins un grade';
     }
-    
+
     if (formData.specialites.length === 0) {
       newErrors.specialites = 'Veuillez sélectionner au moins une spécialité';
     }
-    
+
+    // Validation date début <= date fin
+    if (formData.dateDebut && formData.dateFin) {
+      const d1 = new Date(formData.dateDebut);
+      const d2 = new Date(formData.dateFin);
+      if (d1 > d2) {
+        newErrors.date = 'La date de début doit être antérieure ou égale à la date de fin';
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     // Réinitialiser les erreurs si tout est valide
     setErrors({});
-    
+
     try {
       // Préparer les données à envoyer en mappant vehiculeId vers vehicule
       const { vehiculeId, ...restData } = formData;
@@ -220,13 +228,16 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
         </div>
 
         {/* Messages d'erreur */}
-        {(errors.grades || errors.specialites) && (
+        {(errors.grades || errors.specialites || errors.date) && (
           <div className="error-banner">
             {errors.specialites && (
               <p className="error-message">• {errors.specialites}</p>
             )}
             {errors.grades && (
               <p className="error-message">• {errors.grades}</p>
+            )}
+            {errors.date && (
+              <p className="error-message">• {errors.date}</p>
             )}
           </div>
         )}

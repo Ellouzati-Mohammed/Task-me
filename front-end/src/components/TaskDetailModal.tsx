@@ -53,23 +53,30 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
     const fetchTaskDetails = async () => {
       try {
         setLoading(true);
-        
         // Récupérer les détails de la tâche
         const taskResponse = await api.get(`/tasks/${taskId}`);
         setTask(taskResponse.data.data || taskResponse.data);
-        
         // Récupérer les affectations de cette tâche via la nouvelle API
         const affectationsResponse = await api.get(`/affectations/task/${taskId}`);
         setAffectations(affectationsResponse.data.data || affectationsResponse.data);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des détails:', error);
+      } catch {
+        // Erreur lors de la récupération des détails
       } finally {
         setLoading(false);
       }
     };
-
     fetchTaskDetails();
   }, [taskId]);
+
+  const handleDeleteAffectation = async (affectationId: string) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer cette affectation ?')) return;
+    try {
+      await api.delete(`/affectations/${affectationId}`);
+      setAffectations(prev => prev.filter(a => a._id !== affectationId));
+    } catch (error) {
+      alert("Erreur lors de la suppression de l'affectation "+error);
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -134,7 +141,6 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                     {affectations.map((affectation) => {
                       const config = statutConfig[affectation.statutAffectation] || statutConfig.PROPOSEE;
                       const IconComponent = config.icon;
-                      
                       return (
                         <div 
                           key={affectation._id}
@@ -142,7 +148,8 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                             padding: '16px',
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
-                            backgroundColor: '#fafafa'
+                            backgroundColor: '#fafafa',
+                            position: 'relative'
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
@@ -170,13 +177,11 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                               </span>
                             </div>
                           </div>
-                          
                           <div style={{ fontSize: '12px', color: '#9ca3af' }}>
                             Affecté le {new Date(affectation.dateAffectation).toLocaleDateString('fr-FR')}
                             {' • '}
                             Mode: {affectation.modeAffectation}
                           </div>
-                          
                           {affectation.justificatif && (
                             <div style={{ 
                               marginTop: '8px', 
@@ -189,6 +194,25 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                               <strong>Justificatif:</strong> {affectation.justificatif}
                             </div>
                           )}
+                          <button
+                            onClick={() => handleDeleteAffectation(affectation._id)}
+                            style={{
+                              position: 'absolute',
+                              right: 24,
+                              bottom: 16,
+                              background: '#fee2e2',
+                              color: '#b91c1c',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 18px',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                            }}
+                          >
+                            Supprimer
+                          </button>
                         </div>
                       );
                     })}
