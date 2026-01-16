@@ -133,12 +133,6 @@ export function Auditeurs() {
                         <MessageSquare size={14} style={{ marginRight: '8px' }} />
                         Créer conversation
                       </button>
-                      <button className="menu-item">
-                        Voir le profil
-                      </button>
-                      <button className="menu-item">
-                        Voir les tâches
-                      </button>
                     </div>
                   )}
                 </div>
