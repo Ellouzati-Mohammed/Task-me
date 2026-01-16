@@ -2,7 +2,7 @@ const mongoose  = require("mongoose");
 const { Schema } = mongoose;
 
 const affectationSchema = new Schema({
-    modeAffectation: { type: String, enum: ['MANUEL', 'SEMI_AUTOMATISE', 'AUTOMATISE_IA'], required: true }, 
+    modeAffectation: { type: String, enum: ['MANUEL', 'SEMI_AUTOMATISE', 'AUTOMATISE'], required: true }, 
     statutAffectation: { type: String, enum: ['PROPOSEE', 'ACCEPTEE', 'REFUSEE', 'DELEGUEE', 'ANNULEE'], default: 'PROPOSEE' }, 
     justificatif: { type: String }, // obligatoire si refus ou annulation 
     tache: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true }, 

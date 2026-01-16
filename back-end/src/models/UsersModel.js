@@ -9,14 +9,14 @@ const userSchema = new Schema({
     email: { type: String, required: true, unique: true },
     motdePasse: { type: String, required: true },   
     grade: { type: String, enum: ['',"A", "B", "C"] }, 
-    specialite: { type: String, enum:['','pedagogique', 'orientation', 'planification', 'services_financiers'] }, 
+    specialite: { type: String, enum:['Pédagogique','Orientation', 'Planification', 'Services financiers'] }, 
     formation: { type: String }, 
     diplomes: { type: String }, 
     actif: { type: Boolean, default: true }, 
     role: { type: String, enum: ["admin", "coordinateur", "auditeur"], default: "auditeur" } , 
     dateembauche:{ type: Date },
     paidTasksCount: { type: Number, default: 0 }, // nombre de tâches rémunérées effectuées
-  tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }] // Référence aux tâches assignées
+    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }] // Référence aux tâches assignées
 });
 
 // Hachage du mot de passe avant la sauvegarde

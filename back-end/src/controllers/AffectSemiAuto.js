@@ -15,24 +15,40 @@ function hasTimeConflict(user, task) {
 }
 
 async function assignTaskSemiAuto(taskId) {
-  const task = await Task.findById(taskId).populate("tasks");
+  const task = await Task.findById(taskId).populate("auditeur");
 
-  // Étape 1 : filtrer les auditeurs par spécialité
-  let auditors = await User.find({ role: "auditeur", specialite: task.specialite }).populate("tasks");
+  if (!task) {
+    throw new Error("Tâche introuvable");
+  }
+
+  // Étape 1 : filtrer les auditeurs par spécialité (insensible à la casse/accents si besoin)
+  let auditors = await User.find({ 
+    role: "auditeur", 
+    specialite: { $in: task.specialites } 
+  }).populate("tasks");
+
+  console.log("Tâche spécialités:", task.specialites);
+  console.log("Auditeurs trouvés:", auditors.map(a => ({ nom: a.nom, prenom: a.prenom, specialite: a.specialite })));
 
   // Étape 2 : éliminer les conflits temporels
   auditors = auditors.filter(a => !hasTimeConflict(a, task));
 
   // Étape 3 : trier par ancienneté et rémunération équitable
   auditors.sort((a, b) => {
-    if (a.dateDebut.getTime() !== b.dateDebut.getTime()) {
-      return a.dateDebut.getTime() - b.dateDebut.getTime(); // plus ancien d’abord
+    if (a.dateembauche.getTime() !== b.dateembauche.getTime()) {
+      return a.dateembauche.getTime() - b.dateembauche.getTime(); // plus ancien d’abord
     }
     return a.paidTasksCount - b.paidTasksCount; // moins de tâches rémunérées d’abord
   });
 
   // Étape 4 : choisir l’auditeur
   const chosen = auditors[0];
+  if (!chosen) {
+    return {
+      error: "Aucun auditeur disponible pour cette tâche",
+      taskId: task._id
+    };
+  }
 
   // Étape 5 : créer une affectation
   const affectation = new Affectation({
@@ -41,7 +57,7 @@ async function assignTaskSemiAuto(taskId) {
     tache: task._id,
     auditeur: chosen._id,
     auditeurPropose: chosen._id,
-    rapportAlgorithmique: `Choisi selon spécialité=${task.specialite}, ancienneté=${chosen.dateDebut.toDateString()}, rémunération=${chosen.paidTasksCount}, pas de conflit temporel`
+    rapportAlgorithmique: `Choisi selon spécialité=${task.specialites.join(", ")}, ancienneté=${chosen.dateembauche.toDateString()}, rémunération=${chosen.paidTasksCount}, pas de conflit temporel`
   });
 
   await affectation.save();
@@ -51,17 +67,17 @@ async function assignTaskSemiAuto(taskId) {
     affectationId: affectation._id,
     task: {
       id: task._id,
-      title: task.title,
-      specialite: task.specialite,
+      title: task.nom, // ton schéma utilise "nom"
+      specialites: task.specialites,
       dateDebut: task.dateDebut,
       dateFin: task.dateFin,
-      paid: task.renummeree
+      paid: task.remuneree
     },
     auditor: {
       id: chosen._id,
-      name: chosen.name,
+      name: `${chosen.nom} ${chosen.prenom}`,
       specialite: chosen.specialite,
-      dateDebut: chosen.dateDebut,
+      dateEmbauche: chosen.dateembauche,
       paidTasksCount: chosen.paidTasksCount
     },
     method: "semi-automatisé",
@@ -71,7 +87,7 @@ async function assignTaskSemiAuto(taskId) {
       equitablePay: "Auditeur avec moins de tâches rémunérées",
       timeConflict: false
     },
-    justification: `Auditeur ${chosen.name} choisi selon spécialité et équité.`,
+    justification: `Auditeur ${chosen.nom} ${chosen.prenom} choisi selon spécialité et équité.`,
     validation: {
       statutAffectation: affectation.statutAffectation,
       justificatif: affectation.justificatif || null

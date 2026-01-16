@@ -2,12 +2,20 @@
 const User = require('../models/UsersModel');
 const Task = require('../models/TaskModel');
 const Affectation = require('../models/AffectationModel');
-const { spawn } = require('child_process'); // pour Ollama
+const { spawn } = require('child_process');
 
-// Fonction pour interroger Ollama
+const USE_MOCK = false; // mets true pour tester sans Ollama
+
 function askOllama(prompt) {
+  if (USE_MOCK) {
+    return Promise.resolve(JSON.stringify({
+      auditorId: "696259ec4bc383790f95879e", // un ID valide existant en base
+      justification: "Auditeur choisi car spécialité et disponibilité correspondent."
+    }));
+  }
+
   return new Promise((resolve, reject) => {
-    const ollama = spawn('ollama', ['run', 'llama2:latest']);
+    const ollama = spawn('ollama', ['run', 'llama2']);
     let output = '';
 
     ollama.stdin.write(prompt);
@@ -27,38 +35,49 @@ function askOllama(prompt) {
   });
 }
 
-// Fonction d’affectation automatisée
 async function assignTaskAuto(taskId) {
-  const task = await Task.findById(taskId).populate("tasks");
-  let auditors = await User.find({ role: "auditeur", specialite: task.specialite }).populate("tasks");
+  const task = await Task.findById(taskId);
+  if (!task) throw new Error("Tâche introuvable");
 
-  const context = { task, auditors };
+  const auditors = await User.find({
+    role: "auditeur",
+    specialite: { $in: task.specialites }
+  });
+
   const prompt = `
 Tu es un système d'affectation intelligent.
-Tâche: ${JSON.stringify(context.task)}
-Auditeurs disponibles: ${JSON.stringify(context.auditors)}
+Tâche: ${JSON.stringify(task)}
+Auditeurs disponibles: ${JSON.stringify(auditors)}
 
-Critères:
-- Respecter spécialité
-- Ancienneté
-- Équité rémunération
-- Pas de chevauchement temporel
-- Compatibilité diplômes/formation
-- Éviter surcharge ou répétition
-
-Retourne en JSON: { "auditorId": "...", "justification": "..." }
+Retourne UNIQUEMENT en JSON strict :
+{ "auditorId": "<_id d'un auditeur de la liste>", "justification": "..." }
 `;
 
   const aiResponse = await askOllama(prompt);
-  const choice = JSON.parse(aiResponse);
+
+  let choice;
+  try {
+    const match = aiResponse.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("Pas de JSON trouvé dans la réponse Ollama");
+    choice = JSON.parse(match[0]);
+  } catch (err) {
+    console.error("Erreur parsing Ollama:", aiResponse);
+    throw new Error("Réponse Ollama invalide");
+  }
+
+  // ✅ Vérification que l'auditeur existe en base
+  const auditor = await User.findById(choice.auditorId);
+  if (!auditor) {
+    throw new Error("Auditeur invalide renvoyé par Ollama");
+  }
 
   const affectation = new Affectation({
     modeAffectation: "AUTOMATISE",
     statutAffectation: "PROPOSEE",
     tache: task._id,
-    auditeur: choice.auditorId,
-    auditeurPropose: choice.auditorId,
-    rapportAlgorithmique: choice.justificatif
+    auditeur: auditor._id,
+    auditeurPropose: auditor._id,
+    rapportAlgorithmique: choice.justification
   });
 
   await affectation.save();
@@ -66,4 +85,3 @@ Retourne en JSON: { "auditorId": "...", "justification": "..." }
 }
 
 module.exports = { assignTaskAuto };
-

@@ -4,6 +4,8 @@ const Affectation = require('../models/AffectationModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 const { assignTaskAuto } = require('../controllers/AffecAuto');
 const { assignTaskSemiAuto } = require('../controllers/AffectSemiAuto');
+const Task = require('../models/TaskModel');
+
 
 
 // Endpoint pour générer une affectation semi-automatisée
@@ -327,18 +329,55 @@ router.post('/assign/auto', async (req, res) => {
   } 
 });
 
-// Endpoint pour affectation automatisée (IA) - création de tâche 
-router.post('/assign/auto/create', async (req, res) => { 
-  try { const { title, specialty, startDate, endDate, paid } = req.body; 
-  // Créer la tâche 
-  const task = new Task({ title, specialty, startDate, endDate, paid }); 
-  await task.save(); 
-  // Lancer l’IA 
-  const report = await assignTaskAuto(task._id); 
-  res.json({ success: true, data: report }); 
-} catch (err) { 
-  res.status(500).json({ success: false, message: err.message }); 
-} 
+
+// Endpoint pour affectation automatisée (IA) - création de tâche
+router.post('/assign/auto/create', async (req, res) => {
+  try {
+    const {
+      nom,
+      description,
+      typeTache,
+      dateDebut,
+      dateFin,
+      remuneree,
+      specialites,
+      grades,
+      commune,
+      necessiteVehicule,
+      directionAssociee,
+      nombrePlaces,
+      urgent,
+      coordinateur
+    } = req.body;
+
+    // Création de la tâche
+    const task = new Task({
+      nom,
+      description,
+      typeTache,
+      dateDebut,
+      dateFin,
+      remuneree,
+      specialites,
+      grades,
+      commune,
+      necessiteVehicule,
+      directionAssociee,
+      nombrePlaces,
+      urgent,
+      coordinateur
+    });
+
+    await task.save();
+
+    // Lancer l’affectation automatique (Ollama ou mock)
+    const report = await assignTaskAuto(task._id);
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 module.exports = router;
+

@@ -14,7 +14,7 @@ const taskSchema = new Schema({
     commune: { type: Boolean, default: false },
     necessiteVehicule: { type: Boolean, default: false },
     vehicule: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
-    directionAssociee: { type: String, enum: ["Rabat-Casa", "Meknès-Errachidia", "Marrakech-Agadir"] },
+    directionAssociee: { type: String, enum: ["Rabat-Casablanca", "Meknès-Errachidia", "Marrakech-Agadir"] },
     fichierJoint: {type:String},
     nombrePlaces: {type:Number, default:1},
     statutTache: { 
@@ -32,7 +32,9 @@ const taskSchema = new Schema({
     dateCreation: { type: Date, default: Date.now },
     urgent: { type: Boolean, default: false },
     coordinateur: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    conversation: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation" }
+    conversation: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation" },
+    auditeur: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+
   },
   { timestamps: true }
 ); 

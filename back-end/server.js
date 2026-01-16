@@ -2,6 +2,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
+var nodemailer = require('nodemailer');
 
 dotenv.config();
 
@@ -53,6 +54,9 @@ connectDB().then(() => {
     console.log(`Serveur démarré sur le port ${port}`);
   });
 });
+
+
+
 
 module.exports = app;
 
