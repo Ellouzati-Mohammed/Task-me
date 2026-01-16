@@ -11,8 +11,17 @@ const affectationSchema = new Schema({
     affectationOrigine: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment' }, 
     auditeurPropose: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
     canDelegate: { type: Boolean, default: true }, // false si la tâche vient d'une délégation (ne peut pas déléguer 2 fois)
-    dateAffectation: { type: Date, default: Date.now } },
+    dateAffectation: { type: Date, default: Date.now } ,
+    expiresAt: { type: Date},
+},
  { timestamps: true }
- );                         
+ );         
+ 
+ affectationSchema.pre('save', async function() {
+  if (!this.expiresAt) {
+    this.expiresAt = new Date(this.dateAffectation.getTime() + 24*60*60*1000);
+  }
+});
+
 
 module.exports = mongoose.model("Affectation", affectationSchema);

@@ -79,12 +79,24 @@ function ProtectedRoute({ children, allowedRoles }: { children: ReactNode; allow
   return <>{children}</>;
 }
 
+function LoginRedirect() {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (isAuthenticated) {
+    if (user?.role === 'auditeur') {
+      return <Navigate to="/auditor-dashboard" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Login />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginRedirect />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/*" element={
             <PrivateRoute>

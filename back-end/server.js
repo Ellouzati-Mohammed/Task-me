@@ -1,4 +1,5 @@
 // importer les packages
+require('./src/jobs/affectationExpiration.job');
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
