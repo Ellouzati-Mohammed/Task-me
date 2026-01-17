@@ -77,7 +77,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
   const [formData, setFormData] = useState<TaskFormData>(getInitialFormData());
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
-  const [errors, setErrors] = useState<{ grades?: string; specialites?: string }>({});
+  const [errors, setErrors] = useState<{ grades?: string; specialites?: string; date?: string }>({});
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {

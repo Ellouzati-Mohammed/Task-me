@@ -224,7 +224,7 @@ router.post('/', async (req, res) => {
 
 router.post('/assign', authMiddleware, async (req, res) => {
   try {
-    const { taskId, userId, modeAffectation = 'MANUEL', affectationOrigine } = req.body;
+    const { taskId, userId, modeAffectation = 'MANUEL', affectationOrigine, rapportIA } = req.body;
 
     // Vérifier que les paramètres requis sont fournis
     if (!taskId || !userId) {
@@ -275,6 +275,11 @@ router.post('/assign', authMiddleware, async (req, res) => {
       modeAffectation: modeAffectation,
       statutAffectation: 'PROPOSEE'
     };
+    // Ajouter rapportIA si fourni
+    if (typeof rapportIA !== 'undefined') {
+      newAffectationData.rapportIA = rapportIA;
+    }
+    console.log('Création affectation:', newAffectationData);
     
     // Ajouter l'affectation d'origine si elle est fournie (cas de délégation)
     if (affectationOrigine) {
@@ -357,7 +362,7 @@ router.post('/assign-auto', async (req, res) => {
     }
 
     // Préparer le prompt pour Groq
-    const prompt = `Voici la liste des auditeurs (format JSON): ${JSON.stringify(auditors)}. Voici la tâche (format JSON): ${JSON.stringify(task)}. Sélectionne les meilleurs auditeurs pour cette tâche en tenant compte de la spécialité, du grade et de l'ancienneté. Retourne uniquement un tableau JSON des _id des auditeurs à affecter, sans texte autour.`;
+    const prompt = `Voici la liste des auditeurs (format JSON): ${JSON.stringify(auditors)}. Voici la tâche (format JSON): ${JSON.stringify(task)}. Sélectionne les meilleurs auditeurs pour cette tâche en tenant compte de la spécialité, du grade et de l'ancienneté. Retourne uniquement un tableau JSON d'objets, chaque objet doit contenir l'_id de l'auditeur sélectionné et un champ 'rapportIA' qui explique pourquoi il a été choisi. Exemple de format attendu : [{ "_id": "id1", "rapportIA": "justification pour id1" }, ...]`;
 
     // Appel à l'API Groq (OpenAI compatible)
     const apiKey = process.env.GROQ_API_KEY;
@@ -384,17 +389,22 @@ router.post('/assign-auto', async (req, res) => {
       }
     );
 
-    // On suppose que la réponse contient un tableau d'IDs d'utilisateurs à affecter dans le message
-    let selectedUserIds = [];
+    // On suppose que la réponse contient un tableau d'objets {_id, rapportIA}
+    let selectedWithReports = [];
     try {
       const content = groqResponse.data.choices[0].message.content;
-      selectedUserIds = JSON.parse(content);
+      selectedWithReports = JSON.parse(content);
     } catch (e) {
-      return res.status(500).json({ success: false, message: "Réponse Groq invalide", raw: groqResponse.data });
+      return res.status(500).json({ success: false, message: "Aucun utilisateur n'est le bon pour cette tâche", raw: groqResponse.data });
     }
 
-    // Renvoyer les utilisateurs sélectionnés
-    const selectedUsers = auditors.filter(u => selectedUserIds.includes(u._id.toString()));
+    // Renvoyer les utilisateurs sélectionnés avec leur justification
+    const selectedUsers = auditors
+      .filter(u => selectedWithReports.some(sel => sel._id === u._id.toString()))
+      .map(u => {
+        const rapportIA = selectedWithReports.find(sel => sel._id === u._id.toString())?.rapportIA || '';
+        return { ...u.toObject(), rapportIA };
+      });
     res.json({ success: true, data: selectedUsers });
   } catch (error) {
     console.error('Erreur affectation auto via Ollama:', error);
@@ -443,24 +453,26 @@ router.put('/:id', async (req, res) => {
     // Vérifier si l'utilisateur vient d'accepter la tâche
     if (req.body.statutAffectation === 'ACCEPTEE') {
       const Task = require('../models/TaskModel');
-      
       // Si cette affectation a une affectation d'origine (cas de délégation acceptée), supprimer l'affectation d'origine
       if (updatedAffectation.affectationOrigine) {
         await Affectation.findByIdAndDelete(updatedAffectation.affectationOrigine);
       }
-      
       // Récupérer la tâche associée
       const task = await Task.findById(updatedAffectation.tache._id || updatedAffectation.tache);
-      
       if (task) {
+        // Si la tâche est rémunérée, incrémenter le compteur de l'auditeur
+        if (task.remuneree) {
+          await User.findByIdAndUpdate(
+            updatedAffectation.auditeur._id || updatedAffectation.auditeur,
+            { $inc: { paidTasksCount: 1 } }
+          );
+        }
         // Récupérer toutes les affectations de cette tâche
         const allAffectations = await Affectation.find({ tache: task._id });
-        
         // Compter uniquement les affectations acceptées
         const acceptedCount = allAffectations.filter(
           affectation => affectation.statutAffectation === 'ACCEPTEE'
         ).length;
-        
         // Si le nombre d'affectations acceptées correspond au nombre de places, changer le statut
         if (acceptedCount === task.nombrePlaces) {
           task.statutTache = 'COMPLETEE_AFFECTEE';

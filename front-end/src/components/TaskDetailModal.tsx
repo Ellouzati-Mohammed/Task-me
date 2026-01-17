@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, Calendar, MapPin, Users, CheckCircle, XCircle, Clock, UserX, type LucideIcon } from 'lucide-react';
 import api from '../services/api';
 import '../Styles/TaskFormModal.css';
+import '../Styles/TaskDetailModal.css';
 
 interface TaskDetailModalProps {
   taskId: string;
@@ -34,6 +35,7 @@ interface Affectation {
   dateAffectation: string;
   modeAffectation: string;
   justificatif?: string;
+  rapportIA?: string;
 }
 
 const statutConfig: Record<string, { label: string; color: string; icon: LucideIcon }> = {
@@ -80,50 +82,46 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="task-form-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-        <div className="task-form-header">
+      <div className="task-detail-modal task-form-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="task-detail-header task-form-header">
           <div>
-            <h1 className="task-form-title">Détails de la tâche</h1>
-            <p className="task-form-subtitle">Informations et affectations</p>
+            <h1 className="task-detail-title task-form-title">Détails de la tâche</h1>
+            <p className="task-detail-subtitle task-form-subtitle">Informations et affectations</p>
           </div>
           <button type="button" className="cancel-button" onClick={onClose}>
             <X size={18} />
             Fermer
           </button>
         </div>
-        
         <div className="task-form" style={{ maxHeight: '600px', overflowY: 'auto' }}>
           {loading ? (
             <p style={{ textAlign: 'center', padding: '20px' }}>Chargement...</p>
           ) : task ? (
             <>
               {/* Informations de la tâche */}
-              <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '12px' }}>
+              <div className="task-detail-section" style={{ marginBottom: '24px' }}>
+                <h2 className="task-detail-title" style={{ fontSize: '20px', fontWeight: '600', marginBottom: '12px' }}>
                   {task.nom}
                 </h2>
-                <p style={{ color: '#6b7280', marginBottom: '16px' }}>
+                <p className="task-detail-subtitle" style={{ color: '#6b7280', marginBottom: '16px' }}>
                   {task.description}
                 </p>
-                
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="task-detail-info-row" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <div className="task-detail-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Calendar size={16} color="#6b7280" />
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    <span>
                       {new Date(task.dateDebut).toLocaleDateString('fr-FR')} - {new Date(task.dateFin).toLocaleDateString('fr-FR')}
                     </span>
                   </div>
                   {task.directionAssociee && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="task-detail-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <MapPin size={16} color="#6b7280" />
-                      <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                        {task.directionAssociee}
-                      </span>
+                      <span>{task.directionAssociee}</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="task-detail-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Users size={16} color="#6b7280" />
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    <span>
                       {task.nombrePlaces} place{task.nombrePlaces > 1 ? 's' : ''}
                     </span>
                   </div>
@@ -137,13 +135,14 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                 </h3>
                 
                 {affectations.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div className="task-detail-affectations" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {affectations.map((affectation) => {
                       const config = statutConfig[affectation.statutAffectation] || statutConfig.PROPOSEE;
                       const IconComponent = config.icon;
                       return (
                         <div 
                           key={affectation._id}
+                          className="task-detail-affectation-card"
                           style={{
                             padding: '16px',
                             border: '1px solid #e5e7eb',
@@ -152,19 +151,19 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                             position: 'relative'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                          <div className="task-detail-affectation-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
                             <div>
-                              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '600' }}>
+                              <h4 className="task-detail-affectation-user" style={{ margin: 0, fontSize: '15px', fontWeight: '600' }}>
                                 {affectation.auditeur?.prenom} {affectation.auditeur?.nom}
                               </h4>
-                              <p style={{ margin: '4px 0', fontSize: '13px', color: '#6b7280' }}>
+                              <p className="task-detail-affectation-email" style={{ margin: '4px 0', fontSize: '13px', color: '#6b7280' }}>
                                 {affectation.auditeur?.email}
                               </p>
-                              <p style={{ margin: '4px 0', fontSize: '13px', color: '#6b7280' }}>
+                              <p className="task-detail-affectation-specialite" style={{ margin: '4px 0', fontSize: '13px', color: '#6b7280' }}>
                                 {affectation.auditeur?.specialite} - Grade {affectation.auditeur?.grade}
                               </p>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div className="task-detail-affectation-status" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <IconComponent size={16} color={config.color} />
                               <span 
                                 style={{ 
@@ -177,42 +176,32 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                               </span>
                             </div>
                           </div>
-                          <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                          <div className="task-detail-affectation-meta" style={{ fontSize: '12px', color: '#9ca3af' }}>
                             Affecté le {new Date(affectation.dateAffectation).toLocaleDateString('fr-FR')}
                             {' • '}
                             Mode: {affectation.modeAffectation}
                           </div>
+                          {/* Justification IA */}
+                          {affectation.rapportIA && (
+                            <div className="task-detail-rapport-ia">
+                              <strong>Justification IA :</strong> {affectation.rapportIA}
+                            </div>
+                          )}
+                          {/* Justificatif */}
                           {affectation.justificatif && (
-                            <div style={{ 
-                              marginTop: '8px', 
-                              padding: '8px', 
-                              backgroundColor: '#f3f4f6', 
-                              borderRadius: '4px',
-                              fontSize: '13px',
-                              color: '#4b5563'
-                            }}>
+                            <div className="task-detail-justificatif">
                               <strong>Justificatif:</strong> {affectation.justificatif}
                             </div>
                           )}
-                          <button
-                            onClick={() => handleDeleteAffectation(affectation._id)}
-                            style={{
-                              position: 'absolute',
-                              right: 24,
-                              bottom: 16,
-                              background: '#fee2e2',
-                              color: '#b91c1c',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '6px 18px',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                            }}
-                          >
-                            Supprimer
-                          </button>
+                          {/* Bouton supprimer en bas */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                            <button
+                              className="task-detail-delete-btn"
+                              onClick={() => handleDeleteAffectation(affectation._id)}
+                            >
+                              Supprimer
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
