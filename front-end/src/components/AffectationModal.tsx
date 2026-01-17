@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import api from '../services/api';
 import type { User } from '../types/User.d';
-import '../Styles/TaskFormModal.css';
 
 interface AffectationModalProps {
   taskId: string;
@@ -17,6 +16,9 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [existingAffectationsCount, setExistingAffectationsCount] = useState(0);
+  const [affectMode, setAffectMode] = useState<'MANUEL' | 'SEMI_AUTOMATISE' | 'AUTOMATISE_IA'>('MANUEL');
+  // Stocker les rapports IA pour chaque utilisateur lors de l'affectation auto
+  const [iaReports, setIaReports] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +58,7 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
         return [...prev, userId];
       }
     });
+    setAffectMode('MANUEL'); // Si sélection manuelle, repasse en manuel
   };
 
   const handleAffectUsers = async () => {
@@ -63,19 +66,17 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
       alert('Veuillez sélectionner au moins un utilisateur');
       return;
     }
-
     try {
       setSubmitting(true);
-      
-      // Affecter les utilisateurs un par un avec validation des dates
       let successCount = 0;
       const errors: string[] = [];
-      
       for (const userId of selectedUsers) {
         try {
           await api.post('/affectations/assign', {
             taskId: taskId,
-            userId: userId
+            userId: userId,
+            modeAffectation: affectMode,
+            rapportIA: affectMode === 'AUTOMATISE_IA' ? iaReports[userId] || '' : undefined
           });
           successCount++;
         } catch (error: unknown) {
@@ -114,7 +115,9 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
       if (suggestedUsers && suggestedUsers.length > 0) {
         const userIds = suggestedUsers.map((user: User) => user._id);
         setSelectedUsers(userIds);
+        setAffectMode('SEMI_AUTOMATISE');
         alert(`${suggestedUsers.length} utilisateur(s) suggéré(s) par l'affectation semi-automatique`);
+        // Ne pas affecter ici, attendre le clic sur Affecter
       } else {
         alert('Aucun utilisateur disponible pour cette tâche');
       }
@@ -134,10 +137,20 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
       const response = await api.post('/affectations/assign-auto', {
         taskId: taskId
       });
+      console.log('Réponse IA (Groq):', response.data);
       const suggestedUsers = response.data.data;
       if (suggestedUsers && suggestedUsers.length > 0) {
         const userIds = suggestedUsers.map((user: User) => user._id);
         setSelectedUsers(userIds);
+        setAffectMode('AUTOMATISE_IA');
+        // Stocker les rapports IA pour chaque utilisateur
+        const reports: Record<string, string> = {};
+        suggestedUsers.forEach((user: User & { rapportIA?: string }) => {
+          if (user._id && user.rapportIA) {
+            reports[user._id] = user.rapportIA;
+          }
+        });
+        setIaReports(reports);
         alert(`${suggestedUsers.length} utilisateur(s) suggéré(s) par l'affectation auto (Groq)`);
       } else {
         alert('Aucun utilisateur disponible pour cette tâche');

@@ -224,7 +224,7 @@ router.post('/', async (req, res) => {
 
 router.post('/assign', authMiddleware, async (req, res) => {
   try {
-    const { taskId, userId, modeAffectation = 'MANUEL', affectationOrigine } = req.body;
+    const { taskId, userId, modeAffectation = 'MANUEL', affectationOrigine, rapportIA } = req.body;
 
     // Vérifier que les paramètres requis sont fournis
     if (!taskId || !userId) {
@@ -275,6 +275,11 @@ router.post('/assign', authMiddleware, async (req, res) => {
       modeAffectation: modeAffectation,
       statutAffectation: 'PROPOSEE'
     };
+    // Ajouter rapportIA si fourni
+    if (typeof rapportIA !== 'undefined') {
+      newAffectationData.rapportIA = rapportIA;
+    }
+    console.log('Création affectation:', newAffectationData);
     
     // Ajouter l'affectation d'origine si elle est fournie (cas de délégation)
     if (affectationOrigine) {
