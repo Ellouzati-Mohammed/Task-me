@@ -453,24 +453,26 @@ router.put('/:id', async (req, res) => {
     // Vérifier si l'utilisateur vient d'accepter la tâche
     if (req.body.statutAffectation === 'ACCEPTEE') {
       const Task = require('../models/TaskModel');
-      
       // Si cette affectation a une affectation d'origine (cas de délégation acceptée), supprimer l'affectation d'origine
       if (updatedAffectation.affectationOrigine) {
         await Affectation.findByIdAndDelete(updatedAffectation.affectationOrigine);
       }
-      
       // Récupérer la tâche associée
       const task = await Task.findById(updatedAffectation.tache._id || updatedAffectation.tache);
-      
       if (task) {
+        // Si la tâche est rémunérée, incrémenter le compteur de l'auditeur
+        if (task.remuneree) {
+          await User.findByIdAndUpdate(
+            updatedAffectation.auditeur._id || updatedAffectation.auditeur,
+            { $inc: { paidTasksCount: 1 } }
+          );
+        }
         // Récupérer toutes les affectations de cette tâche
         const allAffectations = await Affectation.find({ tache: task._id });
-        
         // Compter uniquement les affectations acceptées
         const acceptedCount = allAffectations.filter(
           affectation => affectation.statutAffectation === 'ACCEPTEE'
         ).length;
-        
         // Si le nombre d'affectations acceptées correspond au nombre de places, changer le statut
         if (acceptedCount === task.nombrePlaces) {
           task.statutTache = 'COMPLETEE_AFFECTEE';
