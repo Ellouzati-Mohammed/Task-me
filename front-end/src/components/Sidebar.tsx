@@ -48,9 +48,9 @@ export function Sidebar() {
         <div className="sidebar-header">
           {!isCollapsed && (
             <Link to="/dashboard" className="sidebar-logo">
-              <div className="sidebar-logo-icon">
-                <span>T</span>
-              </div>
+              
+                      <img className="sidebar-logo-icon" src="/logotaskme.png" alt="Logo"  />
+
               <span className="sidebar-logo-text">Taskme</span>
             </Link>
           )}

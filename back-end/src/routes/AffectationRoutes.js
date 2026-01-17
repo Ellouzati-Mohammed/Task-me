@@ -357,7 +357,7 @@ router.post('/assign-auto', async (req, res) => {
     }
 
     // Préparer le prompt pour Groq
-    const prompt = `Voici la liste des auditeurs (format JSON): ${JSON.stringify(auditors)}. Voici la tâche (format JSON): ${JSON.stringify(task)}. Sélectionne les meilleurs auditeurs pour cette tâche en tenant compte de la spécialité, du grade et de l'ancienneté. Retourne uniquement un tableau JSON des _id des auditeurs à affecter, sans texte autour.`;
+    const prompt = `Voici la liste des auditeurs (format JSON): ${JSON.stringify(auditors)}. Voici la tâche (format JSON): ${JSON.stringify(task)}. Sélectionne les meilleurs auditeurs pour cette tâche en tenant compte de la spécialité, du grade et de l'ancienneté. Retourne uniquement un tableau JSON d'objets, chaque objet doit contenir l'_id de l'auditeur sélectionné et un champ 'rapportIA' qui explique pourquoi il a été choisi. Exemple de format attendu : [{ "_id": "id1", "rapportIA": "justification pour id1" }, ...]`;
 
     // Appel à l'API Groq (OpenAI compatible)
     const apiKey = process.env.GROQ_API_KEY;
@@ -384,17 +384,22 @@ router.post('/assign-auto', async (req, res) => {
       }
     );
 
-    // On suppose que la réponse contient un tableau d'IDs d'utilisateurs à affecter dans le message
-    let selectedUserIds = [];
+    // On suppose que la réponse contient un tableau d'objets {_id, rapportIA}
+    let selectedWithReports = [];
     try {
       const content = groqResponse.data.choices[0].message.content;
-      selectedUserIds = JSON.parse(content);
+      selectedWithReports = JSON.parse(content);
     } catch (e) {
-      return res.status(500).json({ success: false, message: "Réponse Groq invalide", raw: groqResponse.data });
+      return res.status(500).json({ success: false, message: "Aucun utilisateur n'est le bon pour cette tâche", raw: groqResponse.data });
     }
 
-    // Renvoyer les utilisateurs sélectionnés
-    const selectedUsers = auditors.filter(u => selectedUserIds.includes(u._id.toString()));
+    // Renvoyer les utilisateurs sélectionnés avec leur justification
+    const selectedUsers = auditors
+      .filter(u => selectedWithReports.some(sel => sel._id === u._id.toString()))
+      .map(u => {
+        const rapportIA = selectedWithReports.find(sel => sel._id === u._id.toString())?.rapportIA || '';
+        return { ...u.toObject(), rapportIA };
+      });
     res.json({ success: true, data: selectedUsers });
   } catch (error) {
     console.error('Erreur affectation auto via Ollama:', error);
