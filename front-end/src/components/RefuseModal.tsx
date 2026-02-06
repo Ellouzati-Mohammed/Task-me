@@ -70,7 +70,17 @@ export function RefuseModal({ affectationId, taskName, onClose, onSuccess }: Ref
             />
           </div>
 
-          <div className="task-form-footer">
+          <div 
+            className="task-form-footer" 
+            style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              justifyContent: 'flex-end',
+              marginTop: '24px',
+              paddingTop: '24px',
+              borderTop: '1px solid #e5e7eb'
+            }}
+          >
             <button 
               type="button" 
               className="cancel-button" 

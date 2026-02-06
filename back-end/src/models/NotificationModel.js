@@ -7,6 +7,6 @@ const notificationSchema = new Schema({
      date: { type: Date, default: Date.now }, 
      lue: { type: Boolean, default: false }, 
      utilisateur: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } 
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Notification', notificationSchema);

@@ -2,6 +2,15 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 async function sendEmail(to, subject, text, html = null) {
+  // Vérifier si les credentials email sont configurés
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || process.env.EMAIL_PASS === 'votre_nouveau_app_password_ici') {
+    console.log('⚠️ Email non envoyé (credentials non configurés)');
+    console.log(`📧 Destinataire: ${to}`);
+    console.log(`📝 Sujet: ${subject}`);
+    console.log(`📄 Message: ${text}`);
+    return { success: false, message: 'Email service not configured' };
+  }
+
   let transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -43,7 +52,15 @@ async function sendEmail(to, subject, text, html = null) {
               <tr>
                 <td style="padding: 50px 40px;">
                   <div style="color: #1A2332; font-size: 16px; line-height: 1.8;">
-                    ${text.split('\n').map(line => `<p style="margin: 0 0 16px 0;">${line}</p>`).join('')}
+                    ${text.split('\n').map(line => {
+                      // Si la ligne contient un ":" c'est probablement un label
+                      if (line.includes(':')) {
+                        const [label, ...valueParts] = line.split(':');
+                        const value = valueParts.join(':');
+                        return `<p style="margin: 0 0 16px 0;"><strong style="color: #0f172a; font-weight: 700;">${label}:</strong>${value}</p>`;
+                      }
+                      return `<p style="margin: 0 0 16px 0;">${line}</p>`;
+                    }).join('')}
                   </div>
                 </td>
               </tr>
@@ -84,16 +101,22 @@ async function sendEmail(to, subject, text, html = null) {
     </html>
   `;
 
-  let info = await transporter.sendMail({
-    from: `"Votre Application" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    text, // Version texte simple pour les clients qui ne supportent pas HTML
-    html: htmlTemplate
-  });
+  try {
+    let info = await transporter.sendMail({
+      from: `"Votre Application" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      text,
+      html: htmlTemplate
+    });
 
-  console.log("Email envoyé:", info.response);
-  return info;
+    console.log("✅ Email envoyé avec succès:", info.response);
+    return { success: true, info };
+  } catch (error) {
+    console.error("❌ Erreur lors de l'envoi de l'email:", error.message);
+    // Ne pas bloquer l'application, juste logger l'erreur
+    return { success: false, error: error.message };
+  }
 }
 
 // Test direct avec un message plus élaboré

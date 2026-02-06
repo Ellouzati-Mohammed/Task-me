@@ -237,7 +237,11 @@ function TaskList({ tasks }: TaskListProps) {
 }
 
 export function Dashboard() {
+  console.log('🔵 Dashboard component loaded');
+  
   const { user } = useAuth();
+  console.log('🔵 User from context:', user);
+  
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recentAffectations, setRecentAffectations] = useState<RecentAffectation[]>([]);
   const [stats, setStats] = useState({
@@ -257,15 +261,22 @@ export function Dashboard() {
       try {
         setLoading(true);
         
+        console.log('👤 User:', user);
+        
         // Récupérer les statistiques depuis l'API
+        console.log('📊 Chargement des statistiques...');
         const statsResponse = await api.get('/tasks/stats');
+        console.log('📊 Stats Response:', statsResponse.data);
         const statsData = statsResponse.data.data;
         
         setStats(statsData);
         
         // Récupérer les tâches récentes
+        console.log('📋 Chargement des tâches...');
         const tasksResponse = await api.get('/tasks');
+        console.log('📋 Tasks Response:', tasksResponse.data);
         const apiTasks = tasksResponse.data.data || tasksResponse.data;
+        console.log('📋 Nombre de tâches:', apiTasks.length);
         
         // Mapper les tâches et trier par date de création (plus récent en premier)
         const mappedTasks = apiTasks
@@ -310,14 +321,24 @@ export function Dashboard() {
         setRecentAffectations(mappedAffectations);
         
       } catch (error) {
-        console.error('Erreur lors du chargement du dashboard:', error);
+        console.error('❌ Erreur lors du chargement du dashboard:', error);
+        console.error('❌ Détails:', error);
+        // Afficher une alerte pour voir l'erreur
+        alert('Erreur de chargement du dashboard. Vérifiez la console.');
       } finally {
+        console.log('✅ Chargement terminé');
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    if (user) {
+      console.log('🚀 Démarrage du chargement du dashboard...');
+      fetchDashboardData();
+    } else {
+      console.log('⚠️ Pas d\'utilisateur connecté');
+      setLoading(false);
+    }
+  }, [user]);
 
   return (
     <div className="dashboard-content">

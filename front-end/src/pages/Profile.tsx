@@ -151,13 +151,14 @@ export function Profile() {
            
             {user?.role === 'auditeur' && profile.grade && (
               <div className="profile-stat-item">
-                <span className="stat-label">Grade</span>
+                <span className="stat-labeled">Grade</span>
                 <span className="stat-value">Grade {profile.grade}</span>
               </div>
             )}
             {profile.hireDate && (
               <div className="profile-stat-item">
-                <span className="stat-label">Date d'embauche</span>
+                <span className="stat-labeled">Date d'embauche</span>
+
                 <span className="stat-value">{new Date(profile.hireDate).toLocaleDateString('fr-FR')}</span>
               </div>
             )}
@@ -243,8 +244,7 @@ export function Profile() {
                       type="email"
                       className="form-input"
                       value={profile.email}
-                      onChange={(e) => handleProfileChange('email', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={true}
                     />
                   </div>
 
@@ -257,8 +257,7 @@ export function Profile() {
                       type="tel"
                       className="form-input"
                       value={profile.phone || ''}
-                      onChange={(e) => handleProfileChange('phone', e.target.value)}
-                      disabled={!isEditing}
+                       disabled={true}
                     />
                   </div>
 

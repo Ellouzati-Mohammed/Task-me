@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, Users, CheckCircle, XCircle, Clock, UserX, type LucideIcon } from 'lucide-react';
+import { X, Calendar, MapPin, Users, CheckCircle, XCircle, Clock, UserX, FileText, Download, type LucideIcon } from 'lucide-react';
 import api from '../services/api';
 import '../Styles/TaskFormModal.css';
 import '../Styles/TaskDetailModal.css';
@@ -19,6 +19,7 @@ interface Task {
   nombrePlaces: number;
   typeTache: string;
   statutTache: string;
+  fichierJoint?: string;
 }
 
 interface Affectation {
@@ -126,6 +127,44 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                     </span>
                   </div>
                 </div>
+                
+                {/* Fichier joint */}
+                {task.fichierJoint && (
+                  <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <FileText size={16} color="#1e40af" />
+                      <span style={{ color: '#1e40af', fontWeight: '500' }}>
+                        Document joint
+                      </span>
+                    </div>
+                    <p style={{ margin: '0 0 8px 0', color: '#1e40af', fontSize: '14px' }}>
+                      📎 {task.fichierJoint}
+                    </p>
+                    <a 
+                      href={`http://localhost:5000/api/tasks/download/${task.fichierJoint}`}
+                      download
+                      style={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: '#2563eb', 
+                        textDecoration: 'none',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        padding: '6px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #3b82f6',
+                        borderRadius: '6px',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    >
+                      <Download size={14} />
+                      Télécharger le fichier
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Liste des affectations */}

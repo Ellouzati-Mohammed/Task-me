@@ -16,6 +16,7 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [existingAffectationsCount, setExistingAffectationsCount] = useState(0);
+  const [validAffectationsCount, setValidAffectationsCount] = useState(0);
   const [affectMode, setAffectMode] = useState<'MANUEL' | 'SEMI_AUTOMATISE' | 'AUTOMATISE_IA'>('MANUEL');
   // Stocker les rapports IA pour chaque utilisateur lors de l'affectation auto
   const [iaReports, setIaReports] = useState<Record<string, string>>({});
@@ -33,6 +34,12 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
         const affectationsResponse = await api.get(`/affectations?tache=${taskId}`);
         const affectations = affectationsResponse.data.data || affectationsResponse.data;
         setExistingAffectationsCount(affectations.length);
+        
+        // Compter seulement les affectations avec statut PROPOSEE, ACCEPTEE ou DELEGUEE
+        const validAffectations = affectations.filter((aff: { statutAffectation: string }) => 
+          ['PROPOSEE', 'ACCEPTEE', 'DELEGUEE'].includes(aff.statutAffectation)
+        );
+        setValidAffectationsCount(validAffectations.length);
       } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
         alert('Erreur lors de la récupération des données');
@@ -173,9 +180,9 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
             <p className="task-form-subtitle">
               {taskName && <strong>{taskName}</strong>}
               {' - '}
-              {existingAffectationsCount >= maxPlaces 
-                ? `Tâche complète (${existingAffectationsCount}/${maxPlaces})`
-                : `Sélectionnez ${maxPlaces - existingAffectationsCount} utilisateur(s) maximum (${existingAffectationsCount}/${maxPlaces} déjà affectés)`
+              {validAffectationsCount >= maxPlaces 
+                ? `Tâche complète (${validAffectationsCount}/${maxPlaces})`
+                : `Sélectionnez ${maxPlaces - validAffectationsCount} utilisateur(s) maximum (${validAffectationsCount}/${maxPlaces} déjà affectés)`
               }
             </p>
           </div>
@@ -188,7 +195,7 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
         <div className="task-form" style={{ maxHeight: '400px', overflowY: 'auto' }}>
           {loading ? (
             <p style={{ textAlign: 'center', padding: '20px' }}>Chargement des utilisateurs...</p>
-          ) : existingAffectationsCount >= maxPlaces ? (
+          ) : validAffectationsCount >= maxPlaces ? (
             <div style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
               <p style={{ fontSize: '16px', fontWeight: '500', marginBottom: '10px' }}>
                 Cette tâche est complète
@@ -201,7 +208,7 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {users.map((user) => {
                 const isSelected = selectedUsers.includes(user._id);
-                const isDisabled = !isSelected && selectedUsers.length >= (maxPlaces - existingAffectationsCount);
+                const isDisabled = !isSelected && selectedUsers.length >= (maxPlaces - validAffectationsCount);
                 
                 return (
                   <label 
@@ -260,20 +267,20 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
           gap: '10px'
         }}>
           <div style={{ fontSize: '14px', color: '#6b7280' }}>
-            {existingAffectationsCount >= maxPlaces 
-              ? `${existingAffectationsCount}/${maxPlaces} places attribuées`
-              : `${selectedUsers.length} / ${maxPlaces - existingAffectationsCount} utilisateur(s) sélectionné(s)`
+            {validAffectationsCount >= maxPlaces 
+              ? `${validAffectationsCount}/${maxPlaces} places attribuées`
+              : `${selectedUsers.length} / ${maxPlaces - validAffectationsCount} utilisateur(s) sélectionné(s)`
             }
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button 
               className="cancel-button"
               onClick={handleSemiAutoAffect}
-              disabled={submitting || existingAffectationsCount >= maxPlaces}
+              disabled={submitting || validAffectationsCount >= maxPlaces}
               style={{ 
                 padding: '10px 20px',
-                opacity: (submitting || existingAffectationsCount >= maxPlaces) ? 0.5 : 1,
-                cursor: (submitting || existingAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
+                opacity: (submitting || validAffectationsCount >= maxPlaces) ? 0.5 : 1,
+                cursor: (submitting || validAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
               }}
             >
               {submitting ? 'Chargement...' : 'Affectation semi-auto'}
@@ -281,11 +288,11 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
             <button 
               className="cancel-button"
               onClick={handleAutoAffectGroq}
-              disabled={submitting || existingAffectationsCount >= maxPlaces}
+              disabled={submitting || validAffectationsCount >= maxPlaces}
               style={{ 
                 padding: '10px 20px',
-                opacity: (submitting || existingAffectationsCount >= maxPlaces) ? 0.5 : 1,
-                cursor: (submitting || existingAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer',
+                opacity: (submitting || validAffectationsCount >= maxPlaces) ? 0.5 : 1,
+                cursor: (submitting || validAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer',
                 backgroundColor: '#ffe4b5',
                 color: '#333'
               }}
@@ -295,11 +302,11 @@ export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: A
             <button 
               className="submit-button"
               onClick={handleAffectUsers}
-              disabled={submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces}
+              disabled={submitting || selectedUsers.length === 0 || validAffectationsCount >= maxPlaces}
               style={{ 
                 padding: '10px 24px',
-                opacity: (submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces) ? 0.5 : 1,
-                cursor: (submitting || selectedUsers.length === 0 || existingAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
+                opacity: (submitting || selectedUsers.length === 0 || validAffectationsCount >= maxPlaces) ? 0.5 : 1,
+                cursor: (submitting || selectedUsers.length === 0 || validAffectationsCount >= maxPlaces) ? 'not-allowed' : 'pointer'
               }}
             >
               {submitting ? 'Affectation en cours...' : `Affecter ${selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}`}

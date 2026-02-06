@@ -1,6 +1,6 @@
 import './App.css'
 import './Styles/App.css'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Sidebar } from './components/Sidebar'
 import { Navbar } from './components/Navbar'
@@ -16,6 +16,23 @@ import { Messages } from './pages/Messages'
 import { Profile } from './pages/Profile'
 import { Login } from './pages/Login'
 import type { ReactNode } from 'react'
+
+// Fonction pour obtenir le titre de la page en fonction de la route
+function getPageTitle(pathname: string): string {
+  const titles: { [key: string]: string } = {
+    '/dashboard': 'Tableau de bord',
+    '/auditor-dashboard': 'Tableau de bord',
+    '/tasks': 'Gestion des tâches',
+    '/my-tasks': 'Mes tâches',
+    '/users': 'Gestion des utilisateurs',
+    '/auditeurs': 'Auditeurs',
+    '/vehicles': 'Gestion des véhicules',
+    '/notifications': 'Notifications',
+    '/messages': 'Messages',
+    '/profile': 'Profil',
+  };
+  return titles[pathname] || 'Tableau de bord';
+}
 
 // Composant pour protéger les routes - redirige vers login si non authentifié
 function PrivateRoute({ children }: { children: ReactNode }) {
@@ -91,6 +108,61 @@ function LoginRedirect() {
   return <Login />;
 }
 
+// Composant pour afficher le layout avec Navbar dynamique
+function AppLayout() {
+  const location = useLocation();
+  const pageTitle = getPageTitle(location.pathname);
+
+  return (
+    <div className="app-layout">
+      <Sidebar />
+      <main className="app-main">
+        <Navbar title={pageTitle} />
+        <Routes>
+          <Route path="/dashboard" element={
+            <ProtectedRoute allowedRoles={['admin', 'coordinateur']}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/auditor-dashboard" element={
+            <ProtectedRoute allowedRoles={['auditeur']}>
+              <AuditorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/tasks" element={
+            <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
+              <Tasks />
+            </ProtectedRoute>
+          } />
+          <Route path="/my-tasks" element={
+            <ProtectedRoute allowedRoles={['auditeur']}>
+              <MyTasks />
+            </ProtectedRoute>
+          } />
+          <Route path="/users" element={
+            <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
+              <Users />
+            </ProtectedRoute>
+          } />
+          <Route path="/auditeurs" element={
+            <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
+              <Auditeurs />
+            </ProtectedRoute>
+          } />
+          <Route path="/vehicles" element={
+            <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
+              <Vehicles />
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -100,52 +172,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/*" element={
             <PrivateRoute>
-              <div className="app-layout">
-                <Sidebar />
-                <main className="app-main">
-                  <Navbar title="Tableau de bord" />
-                  <Routes>
-                    <Route path="/dashboard" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/auditor-dashboard" element={
-                      <ProtectedRoute allowedRoles={['auditeur']}>
-                        <AuditorDashboard />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/tasks" element={
-                      <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
-                        <Tasks />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/my-tasks" element={
-                      <ProtectedRoute allowedRoles={['auditeur']}>
-                        <MyTasks />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/users" element={
-                      <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
-                        <Users />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/auditeurs" element={
-                      <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
-                        <Auditeurs />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/vehicles" element={
-                      <ProtectedRoute allowedRoles={['coordinateur', 'admin']}>
-                        <Vehicles />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/messages" element={<Messages />} />
-                    <Route path="/profile" element={<Profile />} />
-                  </Routes>
-                </main>
-              </div>
+              <AppLayout />
             </PrivateRoute>
           } />
         </Routes>
