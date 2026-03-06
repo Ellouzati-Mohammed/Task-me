@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import api from '../services/api';
+import type { RefuseModalProps } from '../types/Affectation.d';
 import '../Styles/TaskFormModal.css';
-
-interface RefuseModalProps {
-  affectationId: string;
-  taskName?: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}
 
 export function RefuseModal({ affectationId, taskName, onClose, onSuccess }: RefuseModalProps) {
   const [justificatif, setJustificatif] = useState('');

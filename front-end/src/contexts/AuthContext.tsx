@@ -1,32 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { UserRole } from '../types/UserForm.d';
+import type { AuthUser, AuthContextType } from '../types/Auth.d';
 import api from '../services/api';
 import { initializeSocket, disconnectSocket } from '../services/socket';
 
-export interface AuthUser {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string;
-  role: UserRole;
-  grade?: string;
-  specialite?: string;
-  formation?: string;
-  diplomes?: string;
-  actif?: boolean;
-  dateembauche?: Date;
-}
-
-interface AuthContextType {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, motdePasse: string) => Promise<void>;
-  logout: () => void;
-  token: string | null;
-}
+export type { AuthUser };
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,

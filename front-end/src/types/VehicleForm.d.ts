@@ -1,4 +1,5 @@
-export type Direction = 'Rabat-Casa' | 'Meknès-Errachidia' | 'Marrakech-Agadir';
+import type { Direction } from './Vehicle';
+export type { Direction };
 
 export interface VehicleFormData {
   immatriculation: string;

@@ -12,36 +12,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import '../Styles/Dashboard.css';
-
-interface AuditorStats {
-  totalAffectations: number;
-  acceptedTasks: number;
-  refusedTasks: number;
-  delegatedTasks: number;
-  pendingTasks: number;
-  completedTasks: number;
-}
-
-interface AffectationWithTask {
-  _id: string;
-  tache: {
-    nom: string;
-    description: string;
-    dateDebut: string;
-    dateFin: string;
-    directionAssociee: string;
-    remuneree: boolean;
-  };
-  statutAffectation: string;
-  dateAffectation: string;
-}
-
-interface StatCardProps {
-  title: string;
-  value: number | string;
-  icon: React.ElementType;
-  iconColor?: string;
-}
+import type { StatCardProps, AuditorStats, AffectationWithTask } from '../types/Dashboard.d';
 
 function StatCard({ title, value, icon: Icon, iconColor = '#14b8a6' }: StatCardProps) {
   return (

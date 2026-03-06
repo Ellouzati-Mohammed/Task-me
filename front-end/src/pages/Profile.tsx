@@ -3,7 +3,7 @@ import { User, Mail, Phone, GraduationCap, Lock, Save } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import '../Styles/Profile.css';
-import type { UserProfile } from '../types/Profile.d';
+import type { UserProfile, PasswordChange } from '../types/Profile.d';
 
 export function Profile() {
   const { user } = useAuth();
@@ -13,7 +13,7 @@ export function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  const [passwordData, setPasswordData] = useState({
+  const [passwordData, setPasswordData] = useState<PasswordChange>({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''

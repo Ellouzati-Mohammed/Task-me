@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import api from '../services/api';
 import type { User } from '../types/User.d';
-
-interface AffectationModalProps {
-  taskId: string;
-  taskName?: string;
-  maxPlaces?: number;
-  onClose: () => void;
-}
+import type { AffectationModalProps } from '../types/Affectation.d';
 
 export function AffectationModal({ taskId, taskName, maxPlaces = 1, onClose }: AffectationModalProps) {
   const [users, setUsers] = useState<User[]>([]);

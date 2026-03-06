@@ -18,33 +18,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import '../Styles/Dashboard.css';
-import type { StatCardProps, Task } from "../types/Dashboard.d";
-
-interface RecentAffectation {
-  id: string;
-  userName: string;
-  taskName: string;
-  status: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
-  date: string;
-}
-
-interface TaskWithTimestamp extends Task {
-  createdAt: string;
-}
-
-interface ApiAffectation {
-  _id: string;
-  auditeur?: {
-    prenom: string;
-    nom: string;
-  };
-  tache?: {
-    nom: string;
-  };
-  statutAffectation: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
-  updatedAt?: string;
-  createdAt?: string;
-}
+import type { StatCardProps, Task, RecentAffectation, TaskWithTimestamp, ApiAffectation } from "../types/Dashboard.d";
 
 // Mapping des statuts API vers les classes CSS
 const getStatusClass = (statut: string): string => {

@@ -23,3 +23,17 @@ export interface RoleConfig {
     color: string;
   };
 }
+
+export interface Auditeur {
+  _id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone?: string;
+  grade?: string;
+  specialite?: string;
+  formation?: string;
+  diplomes?: string;
+  actif: boolean;
+  dateembauche?: string;
+}

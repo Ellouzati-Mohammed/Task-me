@@ -2,14 +2,8 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import api from '../services/api';
 import type { User } from '../types/User.d';
+import type { DelegateModalProps } from '../types/Affectation.d';
 import '../Styles/TaskFormModal.css';
-
-interface DelegateModalProps {
-  affectationId: string;
-  taskName?: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}
 
 export function DelegateModal({ affectationId, taskName, onClose, onSuccess }: DelegateModalProps) {
   const [users, setUsers] = useState<User[]>([]);

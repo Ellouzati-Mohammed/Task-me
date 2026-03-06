@@ -3,28 +3,7 @@ import { Search, Plus, MoreVertical, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Messages.css';
 import api from '../services/api';
-import type { Conversation } from '../types/Message.d';
-
-interface ChatParticipant {
-  _id: string;
-  nom: string;
-  prenom: string;
-  email: string;
-  role: string;
-}
-
-interface ApiConversation {
-  _id: string;
-  participants: ChatParticipant[];
-  titre?: string;
-  conversation: 'GoupeTACHE' | 'PRIVE';
-  tache?: {
-    _id: string;
-    nom: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Conversation, ChatParticipant, ApiConversation } from '../types/Message.d';
 
 
 

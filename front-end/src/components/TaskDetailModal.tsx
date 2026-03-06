@@ -1,43 +1,10 @@
 import { useEffect, useState } from 'react';
 import { X, Calendar, MapPin, Users, CheckCircle, XCircle, Clock, UserX, FileText, Download, type LucideIcon } from 'lucide-react';
 import api from '../services/api';
+import type { TaskDetail, TaskDetailModalProps } from '../types/Dashboard.d';
+import type { AffectationDetail } from '../types/Affectation.d';
 import '../Styles/TaskFormModal.css';
 import '../Styles/TaskDetailModal.css';
-
-interface TaskDetailModalProps {
-  taskId: string;
-  onClose: () => void;
-}
-
-interface Task {
-  _id: string;
-  nom: string;
-  description: string;
-  dateDebut: string;
-  dateFin: string;
-  directionAssociee?: string;
-  nombrePlaces: number;
-  typeTache: string;
-  statutTache: string;
-  fichierJoint?: string;
-}
-
-interface Affectation {
-  _id: string;
-  statutAffectation: string;
-  auditeur: {
-    _id: string;
-    prenom: string;
-    nom: string;
-    email: string;
-    specialite: string;
-    grade: string;
-  };
-  dateAffectation: string;
-  modeAffectation: string;
-  justificatif?: string;
-  rapportIA?: string;
-}
 
 const statutConfig: Record<string, { label: string; color: string; icon: LucideIcon }> = {
   PROPOSEE: { label: 'Proposée', color: '#f59e0b', icon: Clock },
@@ -48,8 +15,8 @@ const statutConfig: Record<string, { label: string; color: string; icon: LucideI
 };
 
 export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
-  const [task, setTask] = useState<Task | null>(null);
-  const [affectations, setAffectations] = useState<Affectation[]>([]);
+  const [task, setTask] = useState<TaskDetail | null>(null);
+  const [affectations, setAffectations] = useState<AffectationDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

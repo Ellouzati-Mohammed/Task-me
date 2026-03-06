@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react';
+
 export interface StatCardProps {
   title: string;
   value: string | number;
@@ -43,4 +45,72 @@ export interface TypeLabels {
   beneficiaire_formation: string;
   observateur: string;
   concepteur_evaluation: string;
+}
+
+// Tâche brute depuis l'API (champ _id MongoDB)
+export interface TaskDetail {
+  _id: string;
+  nom: string;
+  description: string;
+  dateDebut: string;
+  dateFin: string;
+  directionAssociee?: string;
+  nombrePlaces: number;
+  typeTache: string;
+  statutTache: string;
+  fichierJoint?: string;
+}
+
+export interface TaskDetailModalProps {
+  taskId: string;
+  onClose: () => void;
+}
+
+export interface RecentAffectation {
+  id: string;
+  userName: string;
+  taskName: string;
+  status: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
+  date: string;
+}
+
+export interface TaskWithTimestamp extends Task {
+  createdAt: string;
+}
+
+export interface ApiAffectation {
+  _id: string;
+  auditeur?: {
+    prenom: string;
+    nom: string;
+  };
+  tache?: {
+    nom: string;
+  };
+  statutAffectation: 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+export interface AuditorStats {
+  totalAffectations: number;
+  acceptedTasks: number;
+  refusedTasks: number;
+  delegatedTasks: number;
+  pendingTasks: number;
+  completedTasks: number;
+}
+
+export interface AffectationWithTask {
+  _id: string;
+  tache: {
+    nom: string;
+    description: string;
+    dateDebut: string;
+    dateFin: string;
+    directionAssociee: string;
+    remuneree: boolean;
+  };
+  statutAffectation: string;
+  dateAffectation: string;
 }
