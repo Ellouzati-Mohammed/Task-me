@@ -22,3 +22,24 @@ export interface Conversation {
   isGroup?: boolean;
   conversationType?: 'GoupeTACHE' | 'PRIVE';
 }
+
+export interface ChatParticipant {
+  _id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: string;
+}
+
+export interface ApiConversation {
+  _id: string;
+  participants: ChatParticipant[];
+  titre?: string;
+  conversation: 'GoupeTACHE' | 'PRIVE';
+  tache?: {
+    _id: string;
+    nom: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}

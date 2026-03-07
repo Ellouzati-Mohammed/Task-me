@@ -1,5 +1,6 @@
-export type UserRole = 'admin' | 'coordinateur' | 'auditeur';
-export type UserGrade = ''|'A' | 'B' | 'C';
+import type { UserRole, UserGrade } from './User';
+export type { UserRole, UserGrade };
+
 export type Specialite = ''|'pedagogique' | 'orientation' | 'planification' | 'services_financiers';
 
 export interface UserFormData {

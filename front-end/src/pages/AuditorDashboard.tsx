@@ -12,36 +12,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import '../Styles/Dashboard.css';
-
-interface AuditorStats {
-  totalAffectations: number;
-  acceptedTasks: number;
-  refusedTasks: number;
-  delegatedTasks: number;
-  pendingTasks: number;
-  completedTasks: number;
-}
-
-interface AffectationWithTask {
-  _id: string;
-  tache: {
-    nom: string;
-    description: string;
-    dateDebut: string;
-    dateFin: string;
-    directionAssociee: string;
-    remuneree: boolean;
-  };
-  statutAffectation: string;
-  dateAffectation: string;
-}
-
-interface StatCardProps {
-  title: string;
-  value: number | string;
-  icon: React.ElementType;
-  iconColor?: string;
-}
+import type { StatCardProps, AuditorStats, AffectationWithTask } from '../types/Dashboard.d';
 
 function StatCard({ title, value, icon: Icon, iconColor = '#14b8a6' }: StatCardProps) {
   return (
@@ -97,15 +68,19 @@ export function AuditorDashboard() {
   });
   const [myTasks, setMyTasks] = useState<AffectationWithTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAuditorData = async () => {
       try {
         setLoading(true);
+        setError(null);
         
         // Récupérer les statistiques de l'utilisateur connecté
         const statsResponse = await api.get('/users/me/stats');
-        setStats(statsResponse.data.data);
+        if (statsResponse.data.success) {
+          setStats(statsResponse.data.data);
+        }
         
         // Récupérer les tâches de l'auditeur
         const tasksResponse = await api.get('/affectations/my-tasks');
@@ -116,6 +91,7 @@ export function AuditorDashboard() {
         
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
+        setError('Erreur lors du chargement des données');
       } finally {
         setLoading(false);
       }
@@ -134,6 +110,10 @@ export function AuditorDashboard() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
           Chargement...
+        </div>
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#ef4444' }}>
+          {error}
         </div>
       ) : (
         <>
@@ -190,7 +170,13 @@ export function AuditorDashboard() {
                 </div>
               ) : (
                 <div className="task-list">
-                  {myTasks.map((affectation, index) => (
+                  {myTasks.map((affectation, index) => {
+                    // Vérification de sécurité pour éviter les erreurs
+                    if (!affectation || !affectation.tache) {
+                      return null;
+                    }
+                    
+                    return (
                     <div
                       key={affectation._id}
                       className="task-item-card card-hover animate-slide-up"
@@ -198,7 +184,7 @@ export function AuditorDashboard() {
                     >
                       <div className="task-item-header">
                         <div className="task-item-title-section">
-                          <h3 className="task-item-title">{affectation.tache.nom}</h3>
+                          <h3 className="task-item-title">{affectation.tache.nom || 'Sans titre'}</h3>
                           <span className={`task-status-badge ${getStatusClass(affectation.statutAffectation)}`}>
                             {getStatusLabel(affectation.statutAffectation)}
                           </span>
@@ -213,23 +199,26 @@ export function AuditorDashboard() {
                       </div>
                       
                       <p className="task-item-description">
-                        {affectation.tache.description}
+                        {affectation.tache.description || 'Pas de description'}
                       </p>
 
                       <div className="task-item-meta">
                         <div className="task-meta-item">
                           <Calendar size={14} />
-                          <span>{new Date(affectation.tache.dateDebut).toLocaleDateString('fr-FR')} - {new Date(affectation.tache.dateFin).toLocaleDateString('fr-FR')}</span>
+                          <span>
+                            {affectation.tache.dateDebut ? new Date(affectation.tache.dateDebut).toLocaleDateString('fr-FR') : 'N/A'} - {affectation.tache.dateFin ? new Date(affectation.tache.dateFin).toLocaleDateString('fr-FR') : 'N/A'}
+                          </span>
                         </div>
                         {affectation.tache.directionAssociee && (
                           <div className="task-meta-item">
                             <MapPin size={14} />
-                            <span>{affectation.tache.directionAssociee.replace('_', ' - ')}</span>
+                            <span>{String(affectation.tache.directionAssociee).replace('_', ' - ')}</span>
                           </div>
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

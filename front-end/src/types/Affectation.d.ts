@@ -1,5 +1,44 @@
 export type AffectationStatus = 'PROPOSEE' | 'ACCEPTEE' | 'REFUSEE' | 'DELEGUEE';
 
+// Affectation avec auditeur populé (réponse API détaillée)
+export interface AffectationDetail {
+  _id: string;
+  statutAffectation: string;
+  auditeur: {
+    _id: string;
+    prenom: string;
+    nom: string;
+    email: string;
+    specialite: string;
+    grade: string;
+  };
+  dateAffectation: string;
+  modeAffectation: string;
+  justificatif?: string;
+  rapportIA?: string;
+}
+
+export interface AffectationModalProps {
+  taskId: string;
+  taskName?: string;
+  maxPlaces?: number;
+  onClose: () => void;
+}
+
+export interface DelegateModalProps {
+  affectationId: string;
+  taskName?: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export interface RefuseModalProps {
+  affectationId: string;
+  taskName?: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
 export interface Affectation {
   _id: string;
   tache: {

@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import api from '../services/api';
+import type { RefuseModalProps } from '../types/Affectation.d';
 import '../Styles/TaskFormModal.css';
-
-interface RefuseModalProps {
-  affectationId: string;
-  taskName?: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}
 
 export function RefuseModal({ affectationId, taskName, onClose, onSuccess }: RefuseModalProps) {
   const [justificatif, setJustificatif] = useState('');
@@ -70,7 +64,17 @@ export function RefuseModal({ affectationId, taskName, onClose, onSuccess }: Ref
             />
           </div>
 
-          <div className="task-form-footer">
+          <div 
+            className="task-form-footer" 
+            style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              justifyContent: 'flex-end',
+              marginTop: '24px',
+              paddingTop: '24px',
+              borderTop: '1px solid #e5e7eb'
+            }}
+          >
             <button 
               type="button" 
               className="cancel-button" 

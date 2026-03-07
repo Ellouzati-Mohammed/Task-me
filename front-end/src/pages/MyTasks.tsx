@@ -7,7 +7,9 @@ import {
   CheckCircle,
   XCircle,
   ArrowRightLeft,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Download
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -246,7 +248,7 @@ export function MyTasks() {
                           </button>
                         )}
                       </div>
-                    ) : (
+                    ) : status === 'accepted' ? (
                       <div style={{ position: 'relative' }}>
                         <button 
                           className="task-menu-button"
@@ -269,7 +271,7 @@ export function MyTasks() {
                           </div>
                         )}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
@@ -291,6 +293,51 @@ export function MyTasks() {
                     <span>{task.nombrePlaces} place{task.nombrePlaces > 1 ? 's' : ''}</span>
                   </div>
                 </div>
+                
+                {/* Fichier joint */}
+                {task.fichierJoint && (
+                  <div style={{ 
+                    marginTop: '12px', 
+                    padding: '10px 12px', 
+                    backgroundColor: '#eff6ff', 
+                    borderRadius: '6px', 
+                    border: '1px solid #bfdbfe',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FileText size={16} color="#2563eb" />
+                      <span style={{ color: '#1e40af', fontSize: '14px', fontWeight: '500' }}>
+                        {task.fichierJoint}
+                      </span>
+                    </div>
+                    <a 
+                      href={`http://localhost:5000/api/tasks/download/${task.fichierJoint}`}
+                      download
+                      style={{ 
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        backgroundColor: '#2563eb',
+                        color: 'white',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                        fontSize: '13px',
+                        borderRadius: '5px',
+                        transition: 'all 0.2s',
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                    >
+                      <Download size={14} />
+                      Télécharger
+                    </a>
+                  </div>
+                )}
               </div>
             );
           })}

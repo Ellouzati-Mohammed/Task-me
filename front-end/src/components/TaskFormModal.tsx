@@ -78,6 +78,15 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [errors, setErrors] = useState<{ grades?: string; specialites?: string; date?: string }>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingFile, setExistingFile] = useState<string | null>(null);
+
+  // Charger le fichier existant en mode édition
+  useEffect(() => {
+    if (task && mode === 'edit' && (task as { fichierJoint?: string }).fichierJoint) {
+      setExistingFile((task as { fichierJoint?: string }).fichierJoint as string);
+    }
+  }, [task, mode]);
 
   // Bloquer le scroll de la page en arrière-plan
   useEffect(() => {
@@ -93,11 +102,13 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
       if (formData.necessiteVehicule && formData.directionAssociee && formData.dateDebut && formData.dateFin) {
         try {
           setLoadingVehicles(true);
+          const taskId = mode === 'edit' && task ? ((task as { _id?: string; id?: string })?._id || (task as { _id?: string; id?: string })?.id) : undefined;
           const response = await api.get('/vehicles/available', {
             params: {
               direction: formData.directionAssociee,
               dateDebut: formData.dateDebut,
-              dateFin: formData.dateFin
+              dateFin: formData.dateFin,
+              ...(taskId && { excludeTaskId: taskId }) // Exclure la tâche en cours de modification
             }
           });
           const availableVehicles = response.data.data || [];
@@ -116,7 +127,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
     };
 
     fetchVehicles();
-  }, [formData.necessiteVehicule, formData.directionAssociee, formData.dateDebut, formData.dateFin]);
+  }, [formData.necessiteVehicule, formData.directionAssociee, formData.dateDebut, formData.dateFin, mode, task]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,17 +162,50 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
     try {
       // Préparer les données à envoyer en mappant vehiculeId vers vehicule
       const { vehiculeId, ...restData } = formData;
-      const dataToSend = {
-        ...restData,
-        vehicule: vehiculeId || null
-      };
+      
+      // Créer un FormData pour envoyer le fichier
+      const formDataToSend = new FormData();
+      
+      // Ajouter tous les champs du formulaire
+      Object.keys(restData).forEach(key => {
+        const value = restData[key as keyof typeof restData];
+        if (value !== null && value !== undefined) {
+          if (Array.isArray(value)) {
+            // Pour les tableaux, les envoyer en JSON
+            formDataToSend.append(key, JSON.stringify(value));
+          } else {
+            formDataToSend.append(key, String(value));
+          }
+        }
+      });
+      
+      // Ajouter le véhicule
+      if (vehiculeId) {
+        formDataToSend.append('vehicule', vehiculeId);
+      }
+      
+      // Ajouter la direction seulement si véhicule nécessaire
+      formDataToSend.set('directionAssociee', formData.necessiteVehicule ? formData.directionAssociee : '');
+      
+      // Ajouter le fichier s'il existe
+      if (selectedFile) {
+        formDataToSend.append('fichierJoint', selectedFile);
+      }
 
       const taskId = (task as { _id?: string; id?: string })?._id || (task as { _id?: string; id?: string })?.id;
       if (mode === 'edit' && taskId) {
-        await api.put(`/tasks/${taskId}`, dataToSend);
+        await api.put(`/tasks/${taskId}`, formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         console.log('Tâche mise à jour avec succès');
       } else {
-        await api.post('/tasks', dataToSend);
+        await api.post('/tasks', formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         console.log('Tâche créée avec succès');
       }
       onClose();
@@ -382,6 +426,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                   className="form-input"
                   value={formData.dateDebut}
                   onChange={(e) => setFormData(prev => ({ ...prev, dateDebut: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
                   required
                 />
               </div>
@@ -393,6 +438,7 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
                   className="form-input"
                   value={formData.dateFin}
                   onChange={(e) => setFormData(prev => ({ ...prev, dateFin: e.target.value }))}
+                  min={formData.dateDebut || new Date().toISOString().split('T')[0]}
                   required
                 />
               </div>
@@ -474,18 +520,44 @@ export function TaskFormModal({ onClose, task, mode = 'create' }: TaskFormModalP
               Document joint (optionnel)
             </h2>
             <div className="file-upload">
+              {existingFile && !selectedFile && (
+                <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #3b82f6' }}>
+                  <p style={{ margin: '0 0 8px 0', color: '#1e40af', fontWeight: '500' }}>
+                    📎 Fichier actuel: {existingFile}
+                  </p>
+                  <a 
+                    href={`http://localhost:5000/api/tasks/download/${existingFile}`}
+                    download
+                    style={{ color: '#2563eb', textDecoration: 'underline', fontSize: '14px' }}
+                  >
+                    Télécharger le fichier
+                  </a>
+                </div>
+              )}
+              
               <input
                 type="file"
                 id="file-input"
                 className="file-input"
                 accept=".pdf"
-                onChange={(e) => setFormData(prev => ({ ...prev, fichierJoint: e.target.files?.[0] }))}
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
               />
               <label htmlFor="file-input" className="file-label">
                 <Upload size={20} />
-                <span>Cliquez pour télécharger un fichier PDF</span>
+                <span>
+                  {selectedFile 
+                    ? 'Changer le fichier' 
+                    : existingFile 
+                      ? 'Remplacer le fichier' 
+                      : 'Cliquez pour télécharger un fichier'}
+                </span>
               </label>
-              <p className="file-hint">Format accepté: PDF uniquement</p>
+              {selectedFile && (
+                <p className="file-hint" style={{ color: '#10b981', marginTop: '8px', fontWeight: '500' }}>
+                  ✓ Fichier sélectionné: {selectedFile.name}
+                </p>
+              )}
+              <p className="file-hint">Format accepté: PDF uniquement (max 5MB)</p>
             </div>
           </div>
         </form>

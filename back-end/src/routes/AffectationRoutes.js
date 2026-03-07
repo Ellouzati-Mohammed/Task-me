@@ -6,6 +6,8 @@ const User = require('../models/UsersModel');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 const axios = require('axios');
 const { sendEmail } = require('../services/emailService');
+const { emitNotification } = require('../services/notificationSocketService');
+const Notification = require('../models/NotificationModel');
 
 /**
  * Vérifie si un utilisateur a un conflit de dates avec une tâche
@@ -313,6 +315,30 @@ router.post('/assign', authMiddleware, async (req, res) => {
       }
     } catch (err) {
       console.error('Erreur lors de l\'envoi de l\'email:', err);
+    }
+
+    // Créer et envoyer une notification en temps réel
+    try {
+      console.log('📬 Création notification pour userId:', userId);
+      const notification = await Notification.create({
+        utilisateur: userId,
+        typeNotification: 'AFFECTATION',
+        message: `Nouvelle affectation : ${populatedAffectation.tache.nom}`,
+        lue: false
+      });
+      console.log('✅ Notification créée:', notification);
+
+      // Émettre la notification via Socket.IO
+      emitNotification(req.app, userId, {
+        _id: notification._id,
+        type: notification.typeNotification,
+        message: notification.message,
+        createdAt: notification.date,
+        lu: notification.lue
+      });
+      console.log('✅ Notification émise via Socket.IO');
+    } catch (err) {
+      console.error('❌ Erreur création notification:', err);
     }
 
     res.status(201).json({

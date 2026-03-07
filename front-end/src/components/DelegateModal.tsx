@@ -1,85 +1,19 @@
-import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import api from '../services/api';
-import type { User } from '../types/User.d';
+import type { DelegateModalProps } from '../types/Affectation.d';
+import { useDelegate } from '../hooks/useDelegate';
 import '../Styles/TaskFormModal.css';
 
-interface DelegateModalProps {
-  affectationId: string;
-  taskName?: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
 export function DelegateModal({ affectationId, taskName, onClose, onSuccess }: DelegateModalProps) {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
-  const [justificatif, setJustificatif] = useState('');
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/users/auditeurs/list');
-        setUsers(response.data.data || response.data);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des utilisateurs:', error);
-        alert('Erreur lors de la récupération des utilisateurs');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
-
-  const handleDelegate = async () => {
-    if (!selectedUser) {
-      alert('Veuillez sélectionner un utilisateur');
-      return;
-    }
-
-    if (!justificatif.trim()) {
-      alert('Veuillez saisir la raison de la délégation');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      
-      // Mettre à jour l'affectation actuelle
-      await api.put(`/affectations/${affectationId}`, {
-        statutAffectation: 'DELEGUEE',
-        justificatif: justificatif
-      });
-
-      // Créer une nouvelle affectation pour l'utilisateur délégué
-      // TODO: Récupérer le taskId de l'affectation
-      const affectationResponse = await api.get(`/affectations`);
-      const currentAffectation = affectationResponse.data.data.find((aff: { _id: string }) => aff._id === affectationId);
-      
-      if (currentAffectation) {
-        await api.post('/affectations/assign', {
-          taskId: currentAffectation.tache._id || currentAffectation.tache,
-          userId: selectedUser,
-          modeAffectation: 'MANUEL',
-          affectationOrigine: affectationId
-        });
-      }
-
-      alert('Tâche déléguée avec succès !');
-      onSuccess();
-      onClose();
-    } catch (error: unknown) {
-      console.error('Erreur lors de la délégation:', error);
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erreur lors de la délégation';
-      alert(errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const {
+    users,
+    loading,
+    selectedUser,
+    setSelectedUser,
+    submitting,
+    justificatif,
+    setJustificatif,
+    handleDelegate,
+  } = useDelegate(affectationId);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -147,7 +81,7 @@ export function DelegateModal({ affectationId, taskName, onClose, onSuccess }: D
                 <button 
                   type="button" 
                   className="submit-button"
-                  onClick={handleDelegate}
+                  onClick={() => handleDelegate(onSuccess, onClose)}
                   disabled={submitting}
                 >
                   {submitting ? 'Délégation...' : 'Déléguer'}

@@ -16,9 +16,9 @@ router.get('/', async (req, res) => {
 // Route pour récupérer les véhicules disponibles selon direction et dates
 router.get('/available', async (req, res) => {
   try {
-    const { direction, dateDebut, dateFin } = req.query;
+    const { direction, dateDebut, dateFin, excludeTaskId } = req.query;
 
-    // Vérifier que tous les paramètres sont présents
+    // Vérifier que tous les paramètres requis sont présents
     if (!direction || !dateDebut || !dateFin) {
       return res.status(400).json({ 
         success: false, 
@@ -33,14 +33,24 @@ router.get('/available', async (req, res) => {
     // Récupérer tous les véhicules de la direction
     const vehiclesInDirection = await Vehicle.find({ direction });
 
-    // Récupérer toutes les tâches qui ont un véhicule assigné et dont les dates chevauchent
-    // Chevauchement : dateDebut de la tâche < dateFin recherchée ET dateFin de la tâche > dateDebut recherchée
-    const overlappingTasks = await Task.find({
+    // Construire la requête pour les tâches qui chevauchent
+    const taskQuery = {
       vehicule: { $exists: true, $ne: null },
       necessiteVehicule: true,
+      statutTache: { $ne: 'ANNULEE' }, // Exclure les tâches annulées
       dateDebut: { $lt: endDate },
       dateFin: { $gt: startDate }
-    }).populate('vehicule');
+    };
+
+    // Exclure la tâche en cours de modification
+    if (excludeTaskId) {
+      taskQuery._id = { $ne: excludeTaskId };
+    }
+
+    // Récupérer toutes les tâches qui ont un véhicule assigné et dont les dates chevauchent
+    // Exclure les tâches ANNULEES
+    // Chevauchement : dateDebut de la tâche < dateFin recherchée ET dateFin de la tâche > dateDebut recherchée
+    const overlappingTasks = await Task.find(taskQuery).populate('vehicule');
 
     // Créer un ensemble des IDs de véhicules occupés
     const occupiedVehicleIds = new Set();

@@ -60,7 +60,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // Récupérer uniquement les auditeurs (authentification requise)
 router.get('/auditeurs/list', authMiddleware, async (req, res) => {
   try {
-    const auditeurs = await User.find({ role: 'auditeur' });
+    const auditeurs = await User.find({ role: 'auditeur', actif: true });
     res.json({ success: true, data: auditeurs });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Erreur récupération auditeurs' });
