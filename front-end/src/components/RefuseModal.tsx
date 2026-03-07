@@ -1,38 +1,14 @@
-import { useState } from 'react';
 import { X } from 'lucide-react';
-import api from '../services/api';
 import type { RefuseModalProps } from '../types/Affectation.d';
+import { useRefuseModal } from '../hooks/useRefuseModal';
 import '../Styles/TaskFormModal.css';
 
 export function RefuseModal({ affectationId, taskName, onClose, onSuccess }: RefuseModalProps) {
-  const [justificatif, setJustificatif] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleRefuse = async () => {
-    if (!justificatif.trim()) {
-      alert('Veuillez saisir la raison du refus');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      
-      await api.put(`/affectations/${affectationId}`, {
-        statutAffectation: 'REFUSEE',
-        justificatif: justificatif
-      });
-
-      alert('Tâche refusée avec succès !');
-      onSuccess();
-      onClose();
-    } catch (error: unknown) {
-      console.error('Erreur lors du refus:', error);
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erreur lors du refus';
-      alert(errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const { justificatif, setJustificatif, submitting, error, handleRefuse } = useRefuseModal({
+    affectationId,
+    onClose,
+    onSuccess,
+  });
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -62,6 +38,7 @@ export function RefuseModal({ affectationId, taskName, onClose, onSuccess }: Ref
               rows={5}
               required
             />
+            {error && <p style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '6px' }}>{error}</p>}
           </div>
 
           <div 

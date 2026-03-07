@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
 import { X, Calendar, MapPin, Users, CheckCircle, XCircle, Clock, UserX, FileText, Download, type LucideIcon } from 'lucide-react';
-import api from '../services/api';
-import type { TaskDetail, TaskDetailModalProps } from '../types/Dashboard.d';
-import type { AffectationDetail } from '../types/Affectation.d';
+import type { TaskDetailModalProps } from '../types/Dashboard.d';
+import { useTaskDetail } from '../hooks/useTaskDetail';
 import '../Styles/TaskFormModal.css';
 import '../Styles/TaskDetailModal.css';
 
@@ -15,38 +13,7 @@ const statutConfig: Record<string, { label: string; color: string; icon: LucideI
 };
 
 export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
-  const [task, setTask] = useState<TaskDetail | null>(null);
-  const [affectations, setAffectations] = useState<AffectationDetail[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTaskDetails = async () => {
-      try {
-        setLoading(true);
-        // Récupérer les détails de la tâche
-        const taskResponse = await api.get(`/tasks/${taskId}`);
-        setTask(taskResponse.data.data || taskResponse.data);
-        // Récupérer les affectations de cette tâche via la nouvelle API
-        const affectationsResponse = await api.get(`/affectations/task/${taskId}`);
-        setAffectations(affectationsResponse.data.data || affectationsResponse.data);
-      } catch {
-        // Erreur lors de la récupération des détails
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTaskDetails();
-  }, [taskId]);
-
-  const handleDeleteAffectation = async (affectationId: string) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer cette affectation ?')) return;
-    try {
-      await api.delete(`/affectations/${affectationId}`);
-      setAffectations(prev => prev.filter(a => a._id !== affectationId));
-    } catch (error) {
-      alert("Erreur lors de la suppression de l'affectation "+error);
-    }
-  };
+  const { task, affectations, loading, handleDeleteAffectation } = useTaskDetail(taskId);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
