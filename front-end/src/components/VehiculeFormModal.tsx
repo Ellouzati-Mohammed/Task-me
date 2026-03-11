@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Save, X, Car } from 'lucide-react';
 import '../Styles/VehicleFormModal.css';
-import type { VehicleFormData, Direction, VehicleFormModalProps } from '../types/VehicleForm.d';
-import api from '../services/api';
+import type { Direction, VehicleFormModalProps } from '../types/VehicleForm';
+import { useVehicleForm } from '../hooks/useVehiculeForm';
 
 const directionOptions = [
   { value: 'Rabat-Casa' as Direction, label: 'Rabat-Casa' },
@@ -11,44 +10,7 @@ const directionOptions = [
 ];
 
 export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleFormModalProps) {
-  const [formData, setFormData] = useState<VehicleFormData>({
-    immatriculation: vehicle?.immatriculation || '',
-    marque: vehicle?.marque || '',
-    modele: vehicle?.modele || '',
-    direction: vehicle?.direction || 'Rabat-Casa'
-  });
-
-  // Bloquer le scroll de la page en arrière-plan
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      if (mode === 'edit' && vehicle?._id) {
-        // Mettre à jour un véhicule existant
-        await api.put(`/vehicles/${vehicle._id}`, formData);
-        console.log('Véhicule mis à jour avec succès');
-      } else {
-        // Créer un nouveau véhicule
-        await api.post('/vehicles', formData);
-        console.log('Véhicule créé avec succès');
-      }
-      onClose();
-    } catch (error) {
-      console.error('Erreur lors de l\'enregistrement du véhicule:', error);
-      alert('Erreur lors de l\'enregistrement du véhicule');
-    }
-  };
-
-  const handleCancel = () => {
-    onClose();
-  };
+  const { formData, error, updateField, handleSubmit } = useVehicleForm({ onClose, vehicle, mode });
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -65,7 +27,7 @@ export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleF
             </p>
           </div>
           <div className="header-actions">
-            <button type="button" className="cancel-button" onClick={handleCancel}>
+            <button type="button" className="cancel-button" onClick={onClose}>
               <X size={18} />
               Annuler
             </button>
@@ -77,6 +39,11 @@ export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleF
         </div>
 
         <form id="vehicle-form" onSubmit={handleSubmit} className="vehicle-form">
+          {error && (
+            <div style={{ padding: '12px', backgroundColor: '#fee2e2', border: '1px solid #ef4444', borderRadius: '8px', color: '#dc2626', marginBottom: '16px', fontSize: '14px' }}>
+              {error}
+            </div>
+          )}
           {/* Informations générales */}
           <div className="form-section">
             <h2 className="section-title">
@@ -90,7 +57,7 @@ export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleF
                   type="text"
                   className="form-input"
                   value={formData.immatriculation}
-                  onChange={(e) => setFormData(prev => ({ ...prev, immatriculation: e.target.value }))}
+                  onChange={(e) => updateField('immatriculation', e.target.value)}
                   placeholder="Ex: 12345-A-1"
                   required
                 />
@@ -102,7 +69,7 @@ export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleF
                   type="text"
                   className="form-input"
                   value={formData.marque}
-                  onChange={(e) => setFormData(prev => ({ ...prev, marque: e.target.value }))}
+                  onChange={(e) => updateField('marque', e.target.value)}
                   placeholder="Ex: Dacia"
                 />
               </div>
@@ -113,7 +80,7 @@ export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleF
                   type="text"
                   className="form-input"
                   value={formData.modele}
-                  onChange={(e) => setFormData(prev => ({ ...prev, modele: e.target.value }))}
+                  onChange={(e) => updateField('modele', e.target.value)}
                   placeholder="Ex: Logan"
                 />
               </div>
@@ -123,7 +90,7 @@ export function VehicleFormModal({ onClose, vehicle, mode = 'create' }: VehicleF
                 <select
                   className="form-select"
                   value={formData.direction}
-                  onChange={(e) => setFormData(prev => ({ ...prev, direction: e.target.value as Direction }))}
+                  onChange={(e) => updateField('direction', e.target.value as Direction)}
                   required
                 >
                   {directionOptions.map(option => (

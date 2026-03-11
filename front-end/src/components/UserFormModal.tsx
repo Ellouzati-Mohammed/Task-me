@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Save, X, Upload, User as UserIcon, Briefcase } from 'lucide-react';
 import '../Styles/UserFormModal.css';
-import type { UserFormData, UserGrade, Specialite, UserFormModalProps } from '../types/UserForm.d';
-import type { User } from '../types/User.d';
-import api from '../services/api';
+import type { UserGrade, Specialite, UserFormModalProps } from '../types/UserForm.d';
+import { useUserForm } from '../hooks/useUserForm';
 
 const gradeOptions = [
   { value: 'A' as UserGrade, label: 'Grade A' },
@@ -18,141 +16,9 @@ const specialiteOptions = [
   { value: 'services_financiers' as Specialite, label: 'Services financiers' }
 ];
 
-const initialFormData: UserFormData = {
-  nom: '',
-  prenom: '',
-  email: '',
-  motdePasse: '',
-  role: 'auditeur',
-  grade: '',
-  specialite: '',
-  diplomes: '',
-  formations: [],
-  actif: true,
-  dateInscription: new Date().toISOString().split('T')[0]
-};
-
 export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalProps) {
-  const [userType, setUserType] = useState<'coordinateur' | 'auditeur'>(user?.role === 'coordinateur' ? 'coordinateur' : 'auditeur');
-  
-  // Transformer les données de l'utilisateur pour le formulaire
-  const initialData: UserFormData = user ? {
-    nom: user.nom,
-    prenom: user.prenom,
-    email: user.email,
-    motdePasse: user.motdePasse || '',
-    role: user.role,
-    grade: (user.grade || '') as UserGrade,
-    specialite: user.specialite || '',
-    diplomes: user.diplomes || '',
-    formations: [],
-    actif: user.actif,
-    dateInscription: user.dateembauche ? new Date(user.dateembauche).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-  } : { ...initialFormData, role: userType };
-  
-  const [formData, setFormData] = useState<UserFormData>(initialData);
-  const [error, setError] = useState<string>('');
-
-  // Bloquer le scroll de la page en arrière-plan
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-
-   const addUser = async () =>{
-    try {
-        setError('');
-        // Préparer les données pour le backend
-        const dataToSend: Partial<User> & { formation?: string } = {
-          nom: formData.nom,
-          prenom: formData.prenom,
-          email: formData.email,
-          motdePasse: formData.motdePasse,
-          role: formData.role,
-          actif: formData.actif,
-          dateembauche: formData.dateInscription
-        };
-
-        // Ajouter les champs spécifiques aux auditeurs
-        if (formData.role === 'auditeur') {
-          dataToSend.grade = formData.grade !== '' ? formData.grade : undefined;
-          dataToSend.specialite = formData.specialite;
-          dataToSend.diplomes = formData.diplomes || '';
-          dataToSend.formation = Array.isArray(formData.formations) ? formData.formations.join(', ') : formData.formations || '';
-        }
-
-        const res = await api.post("/users/", dataToSend);
-        console.log(res);
-        return true;
-    } catch (err: unknown) {
-        console.error(err);
-        const errorMessage = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
-          ? String(err.response.data.message)
-          : 'Erreur lors de la création de l\'utilisateur';
-        setError(errorMessage);
-        return false;
-    }
-   };
-
-   const updateUser = async () => {
-    try {
-        setError('');
-        // Préparer les données pour le backend
-        const dataToSend: Partial<User> = {
-          nom: formData.nom,
-          prenom: formData.prenom,
-          email: formData.email,
-          role: formData.role,
-          actif: formData.actif,
-          dateembauche: formData.dateInscription
-        };
-
-        // Ajouter le mot de passe seulement s'il est modifié
-        if (formData.motdePasse) {
-          dataToSend.motdePasse = formData.motdePasse;
-        }
-
-        // Ajouter les champs spécifiques aux auditeurs
-        if (formData.role === 'auditeur') {
-          dataToSend.grade = formData.grade !== '' ? formData.grade : undefined;
-          dataToSend.specialite = formData.specialite;
-          dataToSend.diplomes = formData.diplomes || '';
-          dataToSend.formation = Array.isArray(formData.formations) ? formData.formations.join(', ') : formData.formations || '';
-        }
-
-        const res = await api.put(`/users/${user?._id}`, dataToSend);
-        console.log(res);
-        return true;
-    } catch (err: unknown) {
-        console.error(err);
-        const errorMessage = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
-          ? String(err.response.data.message)
-          : 'Erreur lors de la modification de l\'utilisateur';
-        setError(errorMessage);
-        return false;
-    }
-   };
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    let success = false;
-    if (mode === 'create') {
-      success = await addUser();
-    } else {
-      success = await updateUser();
-    }
-    if (success) {
-      onClose();
-    }
-  };
-
-  const handleCancel = () => {
-    onClose();
-  };
+  const { userType, formData, error, updateField, handleUserTypeChange, handleSubmit } =
+    useUserForm({ onClose, user, mode });
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -169,7 +35,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
             </p>
           </div>
           <div className="header-actions">
-            <button type="button" className="cancel-button" onClick={handleCancel}>
+            <button type="button" className="cancel-button" onClick={onClose}>
               <X size={18} />
               Annuler
             </button>
@@ -210,11 +76,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                     name="userType"
                     value="coordinateur"
                     checked={userType === 'coordinateur'}
-                    onChange={(e) => {
-                      const newType = e.target.value as 'coordinateur' | 'auditeur';
-                      setUserType(newType);
-                      setFormData(prev => ({ ...prev, role: newType }));
-                    }}
+                    onChange={(e) => handleUserTypeChange(e.target.value as 'coordinateur' | 'auditeur')}
                   />
                   <span className="type-label">Coordinateur</span>
                 </label>
@@ -224,11 +86,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                     name="userType"
                     value="auditeur"
                     checked={userType === 'auditeur'}
-                    onChange={(e) => {
-                      const newType = e.target.value as 'coordinateur' | 'auditeur';
-                      setUserType(newType);
-                      setFormData(prev => ({ ...prev, role: newType }));
-                    }}
+                    onChange={(e) => handleUserTypeChange(e.target.value as 'coordinateur' | 'auditeur')}
                   />
                   <span className="type-label">Auditeur</span>
                 </label>
@@ -249,7 +107,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                   type="text"
                   className="form-input"
                   value={formData.prenom}
-                  onChange={(e) => setFormData(prev => ({ ...prev, prenom: e.target.value }))}
+                  onChange={(e) => updateField('prenom', e.target.value)}
                   placeholder="Ex: Ahmed"
                   required
                 />
@@ -261,7 +119,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                   type="text"
                   className="form-input"
                   value={formData.nom}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
+                  onChange={(e) => updateField('nom', e.target.value)}
                   placeholder="Ex: Benali"
                   required
                 />
@@ -273,7 +131,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                   type="email"
                   className="form-input"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => updateField('email', e.target.value)}
                   placeholder="Ex: ahmed.benali@taskme.ma"
                   required
                 />
@@ -286,7 +144,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                     type="password"
                     className="form-input"
                     value={formData.motdePasse}
-                    onChange={(e) => setFormData(prev => ({ ...prev, motdePasse: e.target.value }))}
+                    onChange={(e) => updateField('motdePasse', e.target.value)}
                     placeholder="Mot de passe"
                     required={mode === 'create'}
                   />
@@ -309,7 +167,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                     <select
                       className="form-select"
                       value={formData.grade}
-                      onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value as UserGrade }))}
+                      onChange={(e) => updateField('grade', e.target.value as UserGrade)}
                       required
                     >
                       <option value="">Sélectionner un grade</option>
@@ -324,7 +182,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                     <select
                       className="form-select"
                       value={formData.specialite}
-                      onChange={(e) => setFormData(prev => ({ ...prev, specialite: e.target.value as Specialite }))}
+                      onChange={(e) => updateField('specialite', e.target.value as Specialite)}
                       required
                     >
                       <option value="">Sélectionner une spécialité</option>
@@ -342,7 +200,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                   type="date"
                   className="form-input"
                   value={formData.dateInscription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dateInscription: e.target.value }))}
+                  onChange={(e) => updateField('dateInscription', e.target.value)}
                   required
                 />
               </div>
@@ -352,7 +210,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                   <input
                     type="checkbox"
                     checked={formData.actif}
-                    onChange={(e) => setFormData(prev => ({ ...prev, actif: e.target.checked }))}
+                    onChange={(e) => updateField('actif', e.target.checked)}
                   />
                   <span className="switch-text">Utilisateur actif</span>
                 </label>
@@ -372,7 +230,7 @@ export function UserFormModal({ onClose, user, mode = 'create' }: UserFormModalP
                 id="avatar-input"
                 className="file-input"
                 accept="image/*"
-                onChange={(e) => setFormData(prev => ({ ...prev, avatar: e.target.files?.[0] }))}
+                onChange={(e) => updateField('avatar', e.target.files?.[0])}
               />
               <label htmlFor="avatar-input" className="file-label">
                 <Upload size={20} />

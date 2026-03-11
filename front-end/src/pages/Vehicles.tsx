@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
-import { VehicleFormModal } from '../components/VehicleFormModal';
+import { VehicleFormModal } from '../components/VehiculeFormModal';
 import '../Styles/Vehicles.css';
 import type { Vehicle } from "../types/Vehicle.d";
 import api from '../services/api';
