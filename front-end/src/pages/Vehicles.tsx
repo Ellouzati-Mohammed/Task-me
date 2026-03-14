@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { VehicleFormModal } from '../components/VehiculeFormModal';
 import '../Styles/Vehicles.css';
-import type { Vehicle } from "../types/Vehicle.d";
+import type { Vehicle } from "../types/Vehicle";
 import api from '../services/api';
 
 const directionFilters = [

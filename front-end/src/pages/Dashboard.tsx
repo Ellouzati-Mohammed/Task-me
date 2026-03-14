@@ -20,8 +20,8 @@ import type {
   StatCardProps,
   RecentActivityProps,
   TaskListProps,
-} from "../types/Dashboard.d";
-import { useAuditeurs } from '../hooks/useAuditeurs';
+} from "../types/Dashboard";
+import { useDashboard } from '../hooks/useDashboard';
 
 // Mapping des statuts API vers les classes CSS
 const getStatusClass = (statut: string): string => {
@@ -212,7 +212,7 @@ export function Dashboard() {
     tasks,
     recentAffectations,
     dashboardStats,
-  } = useAuditeurs({ mode: 'main-dashboard', user });
+  } = useDashboard({ user });
 
   return (
     <div className="dashboard-content">

@@ -86,6 +86,21 @@ export interface TaskWithTimestamp extends Task {
   createdAt: string;
 }
 
+export interface DashboardStats {
+  totalTasks: number;
+  pendingTasks: number;
+  completedTasks: number;
+  activeAuditors: number;
+  inProgressTasks: number;
+  assignedTasks: number;
+  cancelledTasks: number;
+  acceptanceRate: number;
+}
+
+export interface UseDashboardOptions {
+  user?: { id?: string } | null;
+}
+
 export interface ApiAffectation {
   _id: string;
   auditeur?: {
