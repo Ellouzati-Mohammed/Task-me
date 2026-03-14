@@ -31,6 +31,13 @@ export interface ChatParticipant {
   role: string;
 }
 
+export interface ApiMessage {
+  _id: string;
+  contenu: string;
+  expediteur: ChatParticipant;
+  createdAt: string;
+}
+
 export interface ApiConversation {
   _id: string;
   participants: ChatParticipant[];

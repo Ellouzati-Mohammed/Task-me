@@ -9,61 +9,19 @@ import {
   Search,
   MessageSquare
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../Styles/Auditeurs.css';
-import api from '../services/api';
-import type { Auditeur } from '../types/User.d';
+import { useAuditeurs } from '../hooks/useAuditeurs';
 
 export function Auditeurs() {
-  const [auditeurs, setAuditeurs] = useState<Auditeur[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchAuditeurs();
-  }, []);
-
-  const fetchAuditeurs = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/users/auditeurs/list');
-      setAuditeurs(response.data.data || response.data);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des auditeurs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateConversation = async (auditeurId: string) => {
-    try {
-      const response = await api.post('/chats', { otherUserId: auditeurId });
-      
-      if (response.data.success) {
-        // Rediriger vers la page de messages
-        navigate('/messages');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la création de la conversation:', error);
-      alert('Erreur lors de la création de la conversation');
-    } finally {
-      setOpenMenuId(null);
-    }
-  };
-
-  const filteredAuditeurs = auditeurs.filter(auditeur => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      auditeur.nom.toLowerCase().includes(searchLower) ||
-      auditeur.prenom.toLowerCase().includes(searchLower) ||
-      auditeur.email.toLowerCase().includes(searchLower) ||
-      (auditeur.specialite?.toLowerCase() || '').includes(searchLower) ||
-      (auditeur.grade?.toLowerCase() || '').includes(searchLower)
-    );
-  });
+  const {
+    loading,
+    searchQuery,
+    setSearchQuery,
+    openMenuId,
+    setOpenMenuId,
+    filteredAuditeurs,
+    handleCreateConversation,
+  } = useAuditeurs();
 
   return (
     <div className="auditeurs-page">

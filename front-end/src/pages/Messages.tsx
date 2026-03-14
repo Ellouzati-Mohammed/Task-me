@@ -3,7 +3,7 @@ import { Search, Plus, MoreVertical, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import '../Styles/Messages.css';
 import api from '../services/api';
-import type { Conversation, ChatParticipant, ApiConversation } from '../types/Message.d';
+import type { Conversation, ApiConversation, ApiMessage } from '../types/Message.d';
 
 
 
@@ -93,13 +93,6 @@ export function Messages() {
       setLoadingMessages(true);
       const response = await api.get(`/messages/conversation/${chatId}`);
       const apiMessages = response.data.data || [];
-      
-      interface ApiMessage {
-        _id: string;
-        contenu: string;
-        expediteur: ChatParticipant;
-        createdAt: string;
-      }
       
       // Mapper les messages de l'API au format attendu
       const mappedMessages = apiMessages.map((msg: ApiMessage) => ({

@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import api from '../services/api';
-
-interface UseRefuseModalOptions {
-  affectationId: string;
-  onClose: () => void;
-  onSuccess: () => void;
-}
+import type { UseRefuseModalOptions } from '../types/Affectation.d';
 
 export function useRefuseModal({ affectationId, onClose, onSuccess }: UseRefuseModalOptions) {
   const [justificatif, setJustificatif] = useState('');

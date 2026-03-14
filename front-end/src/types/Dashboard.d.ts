@@ -74,6 +74,14 @@ export interface RecentAffectation {
   date: string;
 }
 
+export interface RecentActivityProps {
+  affectations: RecentAffectation[];
+}
+
+export interface TaskListProps {
+  tasks: Task[];
+}
+
 export interface TaskWithTimestamp extends Task {
   createdAt: string;
 }

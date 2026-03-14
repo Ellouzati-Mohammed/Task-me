@@ -14,11 +14,14 @@ import {
   Ban,
   TrendingUp
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
 import '../Styles/Dashboard.css';
-import type { StatCardProps, Task, RecentAffectation, TaskWithTimestamp, ApiAffectation } from "../types/Dashboard.d";
+import type {
+  StatCardProps,
+  RecentActivityProps,
+  TaskListProps,
+} from "../types/Dashboard.d";
+import { useAuditeurs } from '../hooks/useAuditeurs';
 
 // Mapping des statuts API vers les classes CSS
 const getStatusClass = (statut: string): string => {
@@ -82,10 +85,6 @@ function StatCard({
 
 // Recent Activity Component
 
-interface RecentActivityProps {
-  affectations: RecentAffectation[];
-}
-
 function RecentActivity({ affectations }: RecentActivityProps) {
   
   if (affectations.length === 0) {
@@ -140,10 +139,6 @@ function RecentActivity({ affectations }: RecentActivityProps) {
 }
 
 // Task List Component
-
-interface TaskListProps {
-  tasks: Task[];
-}
 
 function TaskList({ tasks }: TaskListProps) {
   if (tasks.length === 0) {
@@ -211,108 +206,13 @@ function TaskList({ tasks }: TaskListProps) {
 }
 
 export function Dashboard() {
-  console.log('🔵 Dashboard component loaded');
-  
   const { user } = useAuth();
-  console.log('🔵 User from context:', user);
-  
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [recentAffectations, setRecentAffectations] = useState<RecentAffectation[]>([]);
-  const [stats, setStats] = useState({
-    totalTasks: 0,
-    pendingTasks: 0,
-    completedTasks: 0,
-    activeAuditors: 0,
-    inProgressTasks: 0,
-    assignedTasks: 0,
-    cancelledTasks: 0,
-    acceptanceRate: 0
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        console.log('👤 User:', user);
-        
-        // Récupérer les statistiques depuis l'API
-        console.log('📊 Chargement des statistiques...');
-        const statsResponse = await api.get('/tasks/stats');
-        console.log('📊 Stats Response:', statsResponse.data);
-        const statsData = statsResponse.data.data;
-        
-        setStats(statsData);
-        
-        // Récupérer les tâches récentes
-        console.log('📋 Chargement des tâches...');
-        const tasksResponse = await api.get('/tasks');
-        console.log('📋 Tasks Response:', tasksResponse.data);
-        const apiTasks = tasksResponse.data.data || tasksResponse.data;
-        console.log('📋 Nombre de tâches:', apiTasks.length);
-        
-        // Mapper les tâches et trier par date de création (plus récent en premier)
-        const mappedTasks = apiTasks
-          .map((task: Record<string, unknown>) => ({
-            id: task._id as string,
-            name: task.nom as string,
-            description: task.description as string,
-            status: task.statutTache as string,
-            type: task.typeTache as string,
-            startDate: task.dateDebut as string,
-            endDate: task.dateFin as string,
-            direction: task.directionAssociee as string,
-            placesCount: task.nombrePlaces as number,
-            isRemunerated: task.remuneree as boolean,
-            createdAt: task.createdAt as string
-          }))
-          .sort((a: TaskWithTimestamp, b: TaskWithTimestamp) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        
-        // Prendre les 5 tâches les plus récentes
-        const recentTasks = mappedTasks.slice(0, 5);
-        setTasks(recentTasks);
-        
-        // Récupérer les affectations récentes
-        const affectationsResponse = await api.get('/affectations/recent?limit=5');
-        const apiAffectations = affectationsResponse.data.data || affectationsResponse.data;
-        
-        console.log('API Affectations:', apiAffectations);
-        
-        // Mapper les affectations (même si tache est null)
-        const mappedAffectations = apiAffectations
-          .filter((aff: ApiAffectation) => aff.auditeur) // Filtrer seulement si auditeur existe
-          .map((aff: ApiAffectation) => ({
-            id: aff._id,
-            userName: `${aff.auditeur?.prenom || ''} ${aff.auditeur?.nom || ''}`,
-            taskName: aff.tache?.nom || 'Tâche supprimée',
-            status: aff.statutAffectation,
-            date: aff.updatedAt || aff.createdAt
-          }));
-        
-        console.log('Mapped Affectations:', mappedAffectations);
-        
-        setRecentAffectations(mappedAffectations);
-        
-      } catch (error) {
-        console.error('❌ Erreur lors du chargement du dashboard:', error);
-        console.error('❌ Détails:', error);
-        // Afficher une alerte pour voir l'erreur
-        alert('Erreur de chargement du dashboard. Vérifiez la console.');
-      } finally {
-        console.log('✅ Chargement terminé');
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      console.log('🚀 Démarrage du chargement du dashboard...');
-      fetchDashboardData();
-    } else {
-      console.log('⚠️ Pas d\'utilisateur connecté');
-      setLoading(false);
-    }
-  }, [user]);
+  const {
+    loading,
+    tasks,
+    recentAffectations,
+    dashboardStats,
+  } = useAuditeurs({ mode: 'main-dashboard', user });
 
   return (
     <div className="dashboard-content">
@@ -330,49 +230,49 @@ export function Dashboard() {
           <div className="stats-grid">
             <StatCard
               title="Tâches totales"
-              value={stats.totalTasks}
+              value={dashboardStats.totalTasks}
               icon={ClipboardList}
               iconColor="#64748b"
             />
             <StatCard
               title="En attente"
-              value={stats.pendingTasks}
+              value={dashboardStats.pendingTasks}
               icon={Clock}
               iconColor="#f59e0b"
             />
             <StatCard
               title="En cours"
-              value={stats.inProgressTasks}
+              value={dashboardStats.inProgressTasks}
               icon={Play}
               iconColor="#3b82f6"
             />
             <StatCard
               title="Complétées"
-              value={stats.completedTasks}
+              value={dashboardStats.completedTasks}
               icon={CheckCircle2}
               iconColor="#22c55e"
             />
             <StatCard
               title="Affectées"
-              value={stats.assignedTasks}
+              value={dashboardStats.assignedTasks}
               icon={UserCheck}
               iconColor="#14b8a6"
             />
             <StatCard
               title="Annulées"
-              value={stats.cancelledTasks}
+              value={dashboardStats.cancelledTasks}
               icon={Ban}
               iconColor="#ef4444"
             />
             <StatCard
               title="Taux d'acceptation"
-              value={`${stats.acceptanceRate}%`}
+              value={`${dashboardStats.acceptanceRate}%`}
               icon={TrendingUp}
               iconColor="#10b981"
             />
             <StatCard
               title="Auditeurs actifs"
-              value={stats.activeAuditors}
+              value={dashboardStats.activeAuditors}
               icon={Users}
               iconColor="#8b5cf6"
             />

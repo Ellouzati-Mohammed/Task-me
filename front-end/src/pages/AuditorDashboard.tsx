@@ -8,11 +8,10 @@ import {
   TrendingUp,
   ArrowRightLeft
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
 import '../Styles/Dashboard.css';
-import type { StatCardProps, AuditorStats, AffectationWithTask } from '../types/Dashboard.d';
+import type { StatCardProps } from '../types/Dashboard.d';
+import { useAuditeurs } from '../hooks/useAuditeurs';
 
 function StatCard({ title, value, icon: Icon, iconColor = '#14b8a6' }: StatCardProps) {
   return (
@@ -58,47 +57,7 @@ const getStatusClass = (statut: string): string => {
 
 export function AuditorDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<AuditorStats>({
-    totalAffectations: 0,
-    acceptedTasks: 0,
-    refusedTasks: 0,
-    delegatedTasks: 0,
-    pendingTasks: 0,
-    completedTasks: 0
-  });
-  const [myTasks, setMyTasks] = useState<AffectationWithTask[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAuditorData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Récupérer les statistiques de l'utilisateur connecté
-        const statsResponse = await api.get('/users/me/stats');
-        if (statsResponse.data.success) {
-          setStats(statsResponse.data.data);
-        }
-        
-        // Récupérer les tâches de l'auditeur
-        const tasksResponse = await api.get('/affectations/my-tasks');
-        const affectations = tasksResponse.data.data || [];
-        
-        // Prendre les 5 dernières affectations
-        setMyTasks(affectations.slice(0, 5));
-        
-      } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        setError('Erreur lors du chargement des données');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAuditorData();
-  }, []);
+  const { stats, myTasks, loading, error } = useAuditeurs({ mode: 'dashboard' });
 
   return (
     <div className="dashboard-content">

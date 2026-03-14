@@ -39,6 +39,12 @@ export interface RefuseModalProps {
   onSuccess: () => void;
 }
 
+export interface UseRefuseModalOptions {
+  affectationId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
 export interface Affectation {
   _id: string;
   tache: {
