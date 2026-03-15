@@ -8,15 +8,14 @@ import {
   Trash2,
   UserPlus
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { TaskFormModal } from '../components/TaskFormModal';
 import { AffectationModal } from '../components/AffectationModal';
 import { TaskDetailModal } from '../components/TaskDetailModal';
 import '../Styles/Tasks.css';
-import type { Task, TaskStatus, StatusConfig, TypeLabels, TaskType } from "../types/Dashboard.d";
+import type { TaskStatus, StatusConfig, TypeLabels } from '../types/Dashboard.d';
 import type { TaskFormData } from "../types/TaskForm.d";
-import api from '../services/api';
+import { useTasks } from '../hooks/useTasks';
 
 const statusConfig: StatusConfig = {
   pending: { label: 'Créée', className: 'pending' },
@@ -45,192 +44,35 @@ const statusFilters = [
   { value: 'cancelled' as const, label: 'Annulées' },
 ];
 
-// Fonctions de mapping pour convertir les données de l'API
-const mapStatutToStatus = (statut: string): TaskStatus => {
-  const mapping: Record<string, TaskStatus> = {
-    'CREEE': 'pending',
-    'EN_AFFECTATION': 'affectation',
-    'COMPLETEE_AFFECTEE': 'affectee',
-    'EN_COURS': 'encours',
-    'TERMINEE': 'completed',
-    'ANNULEE': 'cancelled'
-  };
-  return mapping[statut] || 'pending';
-};
-
-const mapTypeTacheToType = (typeTache: string): TaskType => {
-  const mapping: Record<string, TaskType> = {
-    'Formateur': 'formateur',
-    'Membre de Jury': 'membre_jury',
-    'Bénéficiaire de formation': 'beneficiaire_formation',
-    'Observateur': 'observateur',
-    'Concepteur': 'concepteur_evaluation'
-  };
-  return mapping[typeTache] || 'formateur';
-};
-
-// Fonction inverse pour envoyer à l'API
-const mapStatusToStatut = (status: TaskStatus): string => {
-  const mapping: Record<TaskStatus, string> = {
-    'pending': 'CREEE',
-    'affectation': 'EN_AFFECTATION',
-    'affectee': 'COMPLETEE_AFFECTEE',
-    'encours': 'EN_COURS',
-    'completed': 'TERMINEE',
-    'cancelled': 'ANNULEE'
-  };
-  return mapping[status];
-};
-
 export function Tasks() {
-  const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<Record<string, unknown> | null>(null);
-  const [showAffectationModal, setShowAffectationModal] = useState(false);
-  const [selectedTaskForAffectation, setSelectedTaskForAffectation] = useState<string | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<string | null>(null);
-
-  // Charger les tâches depuis l'API
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/tasks/my-tasks');
-        const apiTasks = response.data.data || response.data;
-        
-        // Mapper les données de l'API au format attendu
-        const mappedTasks = apiTasks.map((task: Record<string, unknown>) => ({
-          id: task._id as string,
-          name: task.nom as string,
-          description: task.description as string,
-          status: mapStatutToStatus(task.statutTache as string),
-          type: mapTypeTacheToType(task.typeTache as string),
-          startDate: task.dateDebut as string,
-          endDate: task.dateFin as string,
-          direction: task.directionAssociee as string,
-          placesCount: task.nombrePlaces as number,
-          isRemunerated: task.remuneree as boolean
-        }));
-        
-        setTasks(mappedTasks);
-      } catch (error) {
-        console.error('Erreur lors du chargement des tâches:', error);
-        setTasks([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTasks();
-  }, []);
-
-  // Recharger les tâches après création/modification
-  const handleTaskUpdated = () => {
-    setShowCreateModal(false);
-    setEditingTask(null);
-    const fetchTasks = async () => {
-      try {
-        const response = await api.get('/tasks');
-        const apiTasks = response.data.data || response.data;
-        
-        // Mapper les données de l'API au format attendu
-        const mappedTasks = apiTasks.map((task: Record<string, unknown>) => ({
-          id: task._id as string,
-          name: task.nom as string,
-          description: task.description as string,
-          status: mapStatutToStatus(task.statutTache as string),
-          type: mapTypeTacheToType(task.typeTache as string),
-          startDate: task.dateDebut as string,
-          endDate: task.dateFin as string,
-          direction: task.directionAssociee as string,
-          placesCount: task.nombrePlaces as number,
-          isRemunerated: task.remuneree as boolean
-        }));
-        
-        setTasks(mappedTasks);
-      } catch (error) {
-        console.error('Erreur lors du chargement des tâches:', error);
-      }
-    };
-    fetchTasks();
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-      try {
-        await api.delete(`/tasks/${taskId}`);
-        handleTaskUpdated();
-        setOpenMenuId(null);
-      } catch (error) {
-        console.error('Erreur lors de la suppression de la tâche:', error);
-        alert('Erreur lors de la suppression de la tâche');
-      }
-    }
-  };
-
-  const handleEditTask = async (taskId: string) => {
-    try {
-      const response = await api.get(`/tasks/${taskId}`);
-      const taskData = response.data.data || response.data;
-      // Garder les données brutes pour le modal
-      setEditingTask(taskData);
-      setOpenMenuId(null);
-    } catch (error) {
-      console.error('Erreur lors de la récupération de la tâche:', error);
-      alert('Erreur lors de la récupération de la tâche');
-    }
-  };
-
-  const handleAffectTask = (taskId: string) => {
-    setSelectedTaskForAffectation(taskId);
-    setShowAffectationModal(true);
-    setOpenMenuId(null);
-  };
-
-  const handleCloseAffectationModal = () => {
-    setShowAffectationModal(false);
-    setSelectedTaskForAffectation(null);
-  };
-
-  const handleShowTaskDetail = (taskId: string) => {
-    setSelectedTaskForDetail(taskId);
-    setShowDetailModal(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setShowDetailModal(false);
-    setSelectedTaskForDetail(null);
-  };
-
-  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
-    try {
-      const statutTache = mapStatusToStatut(newStatus);
-      await api.patch(`/tasks/${taskId}/status`, { statutTache });
-      
-      // Mettre à jour localement
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId ? { ...task, status: newStatus } : task
-        )
-      );
-    } catch (error) {
-      console.error('Erreur lors du changement de statut:', error);
-      alert('Erreur lors du changement de statut de la tâche');
-    }
-  };
-
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          task.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const {
+    statusFilter,
+    setStatusFilter,
+    viewMode,
+    setViewMode,
+    searchQuery,
+    setSearchQuery,
+    showCreateModal,
+    setShowCreateModal,
+    tasks,
+    loading,
+    openMenuId,
+    setOpenMenuId,
+    editingTask,
+    showAffectationModal,
+    selectedTaskForAffectation,
+    showDetailModal,
+    selectedTaskForDetail,
+    filteredTasks,
+    handleTaskUpdated,
+    handleDeleteTask,
+    handleEditTask,
+    handleAffectTask,
+    handleCloseAffectationModal,
+    handleShowTaskDetail,
+    handleCloseDetailModal,
+    handleStatusChange,
+  } = useTasks();
 
   return (
     <div className="tasks-page">

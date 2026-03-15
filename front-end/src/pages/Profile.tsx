@@ -1,110 +1,24 @@
-import { useState, useEffect } from 'react';
 import { User, Mail, Phone, GraduationCap, Lock, Save } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
 import '../Styles/Profile.css';
-import type { UserProfile, PasswordChange } from '../types/Profile.d';
+import { useProfile } from '../hooks/useProfile';
 
 export function Profile() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'password'>('info');
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
-  const [passwordData, setPasswordData] = useState<PasswordChange>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  // Récupérer les données du profil
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/auth/me');
-        if (response.data.success) {
-          const userData = response.data.user;
-          setProfile({
-            id: userData.id,
-            firstName: userData.prenom,
-            lastName: userData.nom,
-            email: userData.email,
-            phone: userData.phone || '',
-            role: userData.role,
-            grade: userData.grade,
-            hireDate: userData.dateembauche || ''
-          });
-        }
-      } catch (err) {
-        console.error('Erreur récupération profil:', err);
-        setError('Erreur lors du chargement du profil');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
-
-  const handleProfileChange = (field: keyof UserProfile, value: string) => {
-    if (profile) {
-      setProfile(prev => prev ? { ...prev, [field]: value } : null);
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    if (!profile) return;
-    
-    try {
-      // Mapper les champs du profil vers le format backend
-      const updateData = {
-        prenom: profile.firstName,
-        nom: profile.lastName,
-        email: profile.email,
-        phone: profile.phone
-      };
-      
-      const response = await api.put('/users/profile/me', updateData);
-      if (response.data.success) {
-        setIsEditing(false);
-        alert('Profil mis à jour avec succès');
-      }
-    } catch (err) {
-      console.error('Erreur mise à jour profil:', err);
-      alert('Erreur lors de la mise à jour du profil');
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Les mots de passe ne correspondent pas');
-      return;
-    }
-    
-    if (!passwordData.currentPassword || !passwordData.newPassword) {
-      alert('Veuillez remplir tous les champs');
-      return;
-    }
-
-    try {
-      const response = await api.put('/users/profile/password', {
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
-      });
-      
-      if (response.data.success) {
-        alert('Mot de passe modifié avec succès');
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      }
-    } catch (err) {
-      console.error('Erreur changement mot de passe:', err);
-      const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(errorMessage || 'Erreur lors du changement de mot de passe');
-    }
-  };
+  const {
+    user,
+    profile,
+    activeTab,
+    setActiveTab,
+    isEditing,
+    loading,
+    error,
+    passwordData,
+    setPasswordData,
+    startEditing,
+    cancelEditing,
+    handleProfileChange,
+    handleSaveProfile,
+    handlePasswordChange,
+  } = useProfile();
 
   if (loading) {
     return (
@@ -190,12 +104,12 @@ export function Profile() {
                 <div className="form-header">
                   <h3 className="form-title">Informations personnelles</h3>
                   {!isEditing ? (
-                    <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                    <button className="edit-btn" onClick={startEditing}>
                       Modifier
                     </button>
                   ) : (
                     <div className="form-actions">
-                      <button className="cancel-btn" onClick={() => setIsEditing(false)}>
+                      <button className="cancel-btn" onClick={cancelEditing}>
                         Annuler
                       </button>
                       <button className="save-btn" onClick={handleSaveProfile}>
