@@ -6,12 +6,10 @@ import {
   Pencil,
   Trash2
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { VehicleFormModal } from '../components/VehiculeFormModal';
 import '../Styles/Vehicles.css';
-import type { Vehicle } from "../types/Vehicle";
-import api from '../services/api';
+import { useVehicles } from '../hooks/useVehicles';
 
 const directionFilters = [
   { value: 'all' as const, label: 'Tous' },
@@ -21,64 +19,25 @@ const directionFilters = [
 ];
 
 export function Vehicles() {
-  const [directionFilter, setDirectionFilter] = useState<'all' | string>('all');
-  const [viewMode] = useState<'list' | 'grid'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  const fetchVehicles = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/vehicles');
-      setVehicles(response.data.data || response.data);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des véhicules:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteVehicle = async (vehicleId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
-      try {
-        await api.delete(`/vehicles/${vehicleId}`);
-        fetchVehicles();
-      } catch (error) {
-        console.error('Erreur lors de la suppression du véhicule:', error);
-        alert('Erreur lors de la suppression du véhicule');
-      }
-    }
-  };
-
-  const handleEditVehicle = (vehicle: Vehicle) => {
-    setEditingVehicle(vehicle);
-    setOpenMenuId(null);
-  };
-
-  const handleCloseModal = () => {
-    setShowCreateModal(false);
-    setEditingVehicle(null);
-    fetchVehicles();
-  };
-
-  const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = vehicle.immatriculation.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (vehicle.marque?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-                          (vehicle.modele?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-    const matchesDirection = directionFilter === 'all' || vehicle.direction === directionFilter;
-    return matchesSearch && matchesDirection;
-  });
-
-  const getVehiclesByDirection = (direction: string) => 
-    vehicles.filter(v => v.direction === direction).length;
+  const viewMode: 'list' | 'grid' = 'grid';
+  const {
+    directionFilter,
+    setDirectionFilter,
+    searchQuery,
+    setSearchQuery,
+    showCreateModal,
+    setShowCreateModal,
+    vehicles,
+    loading,
+    editingVehicle,
+    openMenuId,
+    setOpenMenuId,
+    filteredVehicles,
+    getVehiclesByDirection,
+    handleDeleteVehicle,
+    handleEditVehicle,
+    handleCloseModal,
+  } = useVehicles();
 
   return (
     <div className="vehicles-page">
