@@ -6,12 +6,9 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import '../Styles/Notifications.css';
-import type { Notification, NotificationStatus, NotificationType } from '../types/Notification.d';
-import { getSocket } from '../services/socket';
-import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import type { NotificationType } from '../types/Notification.d';
+import { useNotifications } from '../hooks/useNotifications';
 
 const notificationTypeConfig = {
   task_assigned: {
@@ -46,160 +43,17 @@ const notificationTypeConfig = {
   }
 };
 
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'task_assigned',
-    title: 'Nouvelle tâche assignée',
-    description: 'Vous avez été assigné à la tâche "Formation React Avancé". Veuillez confirmer votre participation.',
-    timestamp: 'Il y a 15 h',
-    status: 'unread'
-  },
-  {
-    id: '2',
-    type: 'task_modified',
-    title: 'Tâche modifiée',
-    description: 'La date de la tâche "Audit Pédagogique Q1" a été modifiée du 20/02 au 25/02.',
-    timestamp: 'Il y a 16 h',
-    status: 'unread'
-  },
-  {
-    id: '3',
-    type: 'delegation_request',
-    title: 'Demande de délégation',
-    description: 'Ahmed Benali souhaite vous déléguer la tâche "Jury Certification". Acceptez-vous?',
-    timestamp: 'Il y a 17 h',
-    status: 'read'
-  },
-  {
-    id: '4',
-    type: 'reminder',
-    title: 'Rappel: Réponse attendue',
-    description: 'Vous avez 12 heures pour répondre à l\'affectation de la tâche "Conception Évaluation".',
-    timestamp: 'Il y a 20 h',
-    status: 'read'
-  },
-  {
-    id: '5',
-    type: 'task_accepted',
-    title: 'Tâche acceptée',
-    description: 'Votre acceptation de la tâche "Formation Soft Skills" a été enregistrée.',
-    timestamp: 'Il y a 1 j',
-    status: 'read'
-  }
-];
-
 export function Notifications() {
-  const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [loading, setLoading] = useState(true);
-
-  // Charger les notifications depuis l'API
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/notifications');
-        if (response.data.success) {
-          const apiNotifications = response.data.data.map((notif: any) => ({
-            id: notif._id,
-            type: 'task_assigned' as NotificationType,
-            title: notif.typeNotification === 'AFFECTATION' ? 'Nouvelle affectation' : 'Notification',
-            description: notif.message,
-            timestamp: new Date(notif.date).toLocaleDateString('fr-FR'),
-            status: notif.lue ? 'read' as NotificationStatus : 'unread' as NotificationStatus
-          }));
-          setNotifications(apiNotifications);
-        }
-      } catch (error) {
-        console.error('Erreur chargement notifications:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
-
-  // Écouter les notifications en temps réel via Socket.IO
-  useEffect(() => {
-    const socket = getSocket();
-    
-    if (socket) {
-      socket.on('notification', (notification: any) => {
-        console.log('📬 Nouvelle notification reçue:', notification);
-        
-        const newNotif: Notification = {
-          id: notification._id,
-          type: 'task_assigned',
-          title: notification.type === 'AFFECTATION' ? 'Nouvelle affectation' : 'Notification',
-          description: notification.message,
-          timestamp: 'À l\'instant',
-          status: 'unread'
-        };
-        
-        setNotifications(prev => [newNotif, ...prev]);
-        
-        // Afficher une notification native du navigateur
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(newNotif.title, {
-            body: newNotif.description,
-            icon: '/logo.png'
-          });
-        }
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('notification');
-      }
-    };
-  }, []);
-
-  // Demander la permission pour les notifications natives
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  const filteredNotifications = notifications.filter(notif => {
-    if (filter === 'all') return true;
-    return notif.status === 'unread';
-  });
-
-  const unreadCount = notifications.filter(n => n.status === 'unread').length;
-
-  const markAllAsRead = async () => {
-    try {
-      // Mettre à jour toutes les notifications non lues
-      const unreadIds = notifications.filter(n => n.status === 'unread').map(n => n.id);
-      
-      for (const id of unreadIds) {
-        await api.put(`/notifications/${id}`, { lue: true });
-      }
-      
-      // Mettre à jour l'état local
-      setNotifications(notifications.map(n => ({ ...n, status: 'read' as NotificationStatus })));
-    } catch (error) {
-      console.error('Erreur marquage notifications comme lues:', error);
-    }
-  };
-
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await api.put(`/notifications/${notificationId}`, { lue: true });
-      
-      // Mettre à jour l'état local
-      setNotifications(notifications.map(n => 
-        n.id === notificationId ? { ...n, status: 'read' as NotificationStatus } : n
-      ));
-    } catch (error) {
-      console.error('Erreur lors du marquage de la notification comme lue:', error);
-    }
-  };
+  const {
+    notifications,
+    filter,
+    setFilter,
+    loading,
+    filteredNotifications,
+    unreadCount,
+    markAllAsRead,
+    markAsRead,
+  } = useNotifications();
 
   const NotificationIcon = ({ type }: { type: NotificationType }) => {
     const config = notificationTypeConfig[type];

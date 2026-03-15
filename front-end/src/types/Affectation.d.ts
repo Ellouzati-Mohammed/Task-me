@@ -58,6 +58,7 @@ export interface Affectation {
     directionAssociee?: string;
     nombrePlaces: number;
     remuneree: boolean;
+    fichierJoint?: string;
   };
   auditeur: string;
   modeAffectation: 'MANUEL' | 'AUTOMATIQUE';
